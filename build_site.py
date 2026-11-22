@@ -137,6 +137,20 @@ def parse_meals(block: str, day_no: int) -> list[dict]:
     return meals
 
 
+def clean_cell(text: str) -> str:
+    text = strip_md_links(text)
+    text = text.replace("**", "")
+    return text.strip()
+
+
+def row_of(r: list[str]) -> dict:
+    cells = [clean_cell(c) for c in r] + [""] * (4 - len(r))
+    time = cells[0]
+    optional = "（可選）" in time or "(可選)" in time
+    time = time.replace("（可選）", "").replace("(可選)", "").strip()
+    return {"time": time, "transport": cells[1], "activity": cells[2], "note": cells[3], "optional": optional}
+
+
 def parse_days(body: str) -> list[dict]:
     matches = list(DAY_RE.finditer(body))
     days = []
@@ -148,8 +162,11 @@ def parse_days(body: str) -> list[dict]:
         rest_block = "\n".join(ln for ln in block.splitlines() if not ln.startswith("- **Day"))
 
         plans: list[dict] = []
+        decision = []
         plan_headers = list(re.finditer(r"^\*\*(Plan [AB])：(.+?)\*\*$", rest_block, re.M))
         if plan_headers:
+            preamble = rest_block[: plan_headers[0].start()]
+            decision = [parse_bullet(ln) for ln in preamble.splitlines() if ln.strip().startswith("- ")]
             for j, ph in enumerate(plan_headers):
                 p_end = plan_headers[j + 1].start() if j + 1 < len(plan_headers) else len(rest_block)
                 chunk = rest_block[ph.end() : p_end]
@@ -158,14 +175,9 @@ def parse_days(body: str) -> list[dict]:
                 plans.append({
                     "key": ph.group(1).replace("Plan ", ""),
                     "name": ph.group(2),
-                    "rows": [{"time": r[0], "transport": r[1], "activity": r[2], "note": r[3] if len(r) > 3 else ""} for r in rows],
+                    "rows": [row_of(r) for r in rows],
                     "notes": [],
                 })
-            # notes that sit before the first plan header (decision advice)
-            preamble = rest_block[: plan_headers[0].start()]
-            for ln in preamble.splitlines():
-                if ln.strip().startswith("- "):
-                    plans[0]["notes"].append(parse_bullet(ln))
             # attach following bullets to the plan they belong to
             for j, ph in enumerate(plan_headers):
                 p_end = plan_headers[j + 1].start() if j + 1 < len(plan_headers) else len(rest_block)
@@ -177,7 +189,7 @@ def parse_days(body: str) -> list[dict]:
             tbl_lines = [ln for ln in rest_block.splitlines() if ln.strip().startswith("|")]
             rows = parse_table(tbl_lines)
             notes = [parse_bullet(ln) for ln in rest_block.splitlines() if ln.strip().startswith("- ")]
-            plans.append({"key": None, "name": "", "rows": [{"time": r[0], "transport": r[1], "activity": r[2], "note": r[3] if len(r) > 3 else ""} for r in rows], "notes": notes})
+            plans.append({"key": None, "name": "", "rows": [row_of(r) for r in rows], "notes": notes})
 
         days.append({
             "no": int(m.group(1)),
@@ -185,16 +197,22 @@ def parse_days(body: str) -> list[dict]:
             "weekday": m.group(3),
             "title": m.group(4).strip(),
             "plans": plans,
+            "decision": decision,
             "meals": parse_meals("\n".join(meal_lines), int(m.group(1))),
         })
     return days
 
 
 # ---------------------------------------------------------------- other sections
-def parse_flights(body: str) -> list[dict]:
+def parse_flights(body: str) -> dict:
     sec = section(body, r"## 1\. 航班與機場交通")
     rows = parse_table([ln for ln in sec.splitlines() if ln.strip().startswith("|")])
-    return [{"date": r[0], "flight": r[1], "time": r[2], "note": r[3] if len(r) > 3 else ""} for r in rows]
+    flights = [{"date": r[0], "flight": r[1], "time": r[2], "note": r[3] if len(r) > 3 else ""} for r in rows]
+    warnings = []
+    for ln in sec.splitlines():
+        if "⚠" in ln or "待電子機票確認" in ln:
+            warnings.append(parse_bullet(ln))
+    return {"rows": flights, "warnings": warnings}
 
 
 def parse_hotel(body: str) -> dict:
@@ -211,8 +229,36 @@ def parse_transport(body: str) -> list[dict]:
     for r in rows:
         if len(r) < 4:
             continue
-        fare = r[3].replace("¥", "").strip()
-        out.append({"from": r[0], "way": r[1], "time": r[2], "fare": fare})
+        out.append({"from": clean_cell(r[0]), "way": clean_cell(r[1]), "time": clean_cell(r[2]), "fare": clean_cell(r[3])})
+    return out
+
+
+def parse_transfer(body: str) -> list[dict]:
+    sec = section(body, r"### 4\.1 大阪站／梅田轉乘小抄", r"\n## ")
+    out = []
+    for ln in sec.splitlines():
+        if not ln.strip().startswith("- "):
+            continue
+        b = parse_bullet(ln)
+        head, sep, tail = b["text"].partition("：")
+        out.append({"title": head, "detail": tail if sep else "", "links": b["links"]})
+    return out
+
+
+def parse_practices(body: str) -> list[str]:
+    sec = section(body, r"## 6\. 床蝨與住宿實務")
+    return [parse_bullet(ln)["text"] for ln in sec.splitlines() if ln.strip().startswith("- ")]
+
+
+def parse_limits(body: str) -> list[str]:
+    sec = section(body, r"## 0\. 先看這裡", r"\n## 1\.")
+    keep = ("限制", "尚未", "重查", "待", "⚠", "未公布")
+    out = []
+    for ln in sec.splitlines():
+        if ln.strip().startswith("> -"):
+            t = parse_bullet(ln.replace(">", "", 1))["text"]
+            if any(k in t for k in keep):
+                out.append(t)
     return out
 
 
@@ -221,9 +267,12 @@ def parse_tickets(body: str) -> list[dict]:
     out = []
     for ln in sec.splitlines():
         if ln.strip().startswith("- "):
+            raw = ln.strip()
+            if "[[" in raw:          # internal vault links never go public
+                continue
             b = parse_bullet(ln)
             name, _, rest = b["text"].partition("：")
-            out.append({"name": name, "detail": rest or b["text"], "links": b["links"]})
+            out.append({"name": name, "detail": (rest or b["text"]).strip(), "links": b["links"]})
     return out
 
 
@@ -272,6 +321,9 @@ def build_data() -> dict:
         "meta": meta,
         "summary": parse_summary(body),
         "flights": parse_flights(body),
+        "limits": parse_limits(body),
+        "transfer": parse_transfer(body),
+        "practices": parse_practices(body),
         "hotel": hotel,
         "days": parse_days(body),
         "transport": parse_transport(body),
@@ -305,13 +357,16 @@ HTML = r"""<!doctype html>
 <style>
 :root{
   --paper:#f8f4ec; --paper-2:#fffdf8; --ink:#17130f; --ink-soft:#43392f;
-  --muted:#7a6d5f; --line:#e2d8c8; --vermilion:#b23a26; --gold:#a88444;
+  --muted:#5f5347; --line:#e2d8c8; --vermilion:#b23a26; --gold:#8a6526;
   --shadow:0 18px 50px -28px rgba(40,25,10,.55);
   --serif:"Noto Serif TC","Songti TC",Georgia,serif;
   --sans:"Noto Sans TC","PingFang TC",-apple-system,sans-serif;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
+.skip-link{position:absolute;left:-9999px;top:8px;z-index:99;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px}
+.skip-link:focus{left:16px}
+:focus-visible{outline:2px solid var(--vermilion);outline-offset:3px}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-weight:400;line-height:1.75;-webkit-font-smoothing:antialiased}
 img{max-width:100%;display:block}
 a{color:inherit}
@@ -342,7 +397,7 @@ a{color:inherit}
 .nav__in::-webkit-scrollbar{display:none}
 .nav a{white-space:nowrap;text-decoration:none;font-size:13px;color:var(--ink-soft);padding:6px 12px;border-radius:999px}
 .nav a:hover,.nav a.on{background:var(--ink);color:var(--paper)}
-.nav .brand{font-family:var(--serif);font-weight:700;margin-right:8px;letter-spacing:.06em}
+.nav .brand{font-family:var(--serif);font-weight:700;margin-right:8px;letter-spacing:.06em;white-space:nowrap}
 
 /* sections */
 section{padding:88px 0;scroll-margin-top:72px}
@@ -372,11 +427,11 @@ section{padding:88px 0;scroll-margin-top:72px}
 .day__head{display:grid;grid-template-columns:120px 1fr;gap:28px;align-items:start;margin-bottom:28px}
 .day__no{font-family:var(--serif);font-size:76px;line-height:.9;color:var(--vermilion);font-weight:900}
 .day__no small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.24em;color:var(--muted);margin-top:10px}
-.day__title h3{font-family:var(--serif);font-size:clamp(22px,2.8vw,32px);margin:0 0 8px;font-weight:700;line-height:1.35}
+.day__title h2{font-family:var(--serif);font-size:clamp(22px,2.8vw,32px);margin:0 0 8px;font-weight:700;line-height:1.35}
 .day__title .date{font-size:13px;color:var(--muted);letter-spacing:.08em}
-.gallery{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:26px 0 34px}
-.gallery figure{margin:0;position:relative;overflow:hidden;border-radius:12px;height:210px;background:#ddd}
-.gallery figure:first-child{height:210px}
+.gallery{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;margin:26px 0 34px}
+.gallery figure{margin:0;position:relative;overflow:hidden;border-radius:12px;aspect-ratio:4/3;background:#ddd}
+.gallery figure:first-child{aspect-ratio:auto}
 .gallery img{width:100%;height:100%;object-fit:cover;transition:transform .8s ease}
 .gallery figure:hover img{transform:scale(1.05)}
 .gallery figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 14px 10px;font-size:11px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.62))}
@@ -387,7 +442,7 @@ section{padding:88px 0;scroll-margin-top:72px}
 .plan-name{font-size:13px;color:var(--muted);margin:0 0 14px}
 
 .timeline{list-style:none;margin:0;padding:0;position:relative}
-.timeline:before{content:"";position:absolute;left:104px;top:8px;bottom:8px;width:1px;background:var(--line)}
+.timeline:before{content:"";position:absolute;left:129px;top:8px;bottom:8px;width:1px;background:var(--line)}
 .tl{display:grid;grid-template-columns:104px 1fr;gap:26px;position:relative;padding:0 0 26px}
 .tl:last-child{padding-bottom:0}
 .tl__time{font-family:var(--serif);font-size:14px;white-space:nowrap;color:var(--vermilion);text-align:right;padding-top:2px;font-weight:700;letter-spacing:.02em}
@@ -456,6 +511,41 @@ footer .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:40px}
 footer h4{font-family:var(--serif);color:#f4ead8;margin:0 0 10px;font-size:15px}
 .credits{max-height:150px;overflow:auto;line-height:1.9;font-size:11px;color:#a89a86}
 
+
+/* alerts */
+.alerts{margin:36px 0 0}
+.alert{display:flex;gap:14px;align-items:flex-start;background:#fdf3ef;border:1px solid #ecc6b8;border-left:4px solid var(--vermilion);border-radius:12px;padding:14px 18px;font-size:13.5px;color:#6d2a1c;margin-bottom:10px}
+.alert .ico{font-size:16px;line-height:1.4}
+.alert b{color:#8f2c19}
+.banner{background:#fdf3ef;border:1px dashed #d98f7c;color:#7a2b1a;border-radius:10px;padding:12px 14px;font-size:12.5px;margin:14px 0 0}
+.banner strong{color:#8f2c19}
+
+/* day decision + segmented control */
+.decision{background:#f3ecdf;border-radius:12px;padding:14px 18px;font-size:13px;color:var(--ink-soft);margin:0 0 18px}
+.decision b{font-family:var(--serif)}
+.decision ul{margin:6px 0 0;padding-left:18px}
+.plans{display:inline-flex;gap:4px;background:#efe7d8;padding:4px;border-radius:999px;margin:0 0 18px}
+.plan-tab{border:0;background:transparent;border-radius:999px;padding:8px 18px;font-family:var(--sans);font-size:13px;cursor:pointer;color:var(--ink-soft)}
+.plan-tab.on{background:var(--paper-2);color:var(--vermilion);box-shadow:0 2px 8px -4px rgba(60,35,10,.35);font-weight:600}
+.tag-opt{display:inline-block;font-size:10.5px;letter-spacing:.06em;color:#8a6526;background:#f6ecda;border:1px solid #e4d2b0;border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:1px}
+.pick{display:inline-block;font-size:10px;letter-spacing:.06em;color:#fff;background:var(--vermilion);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.meal .maps{font-size:11px;color:var(--muted);border-bottom:1px dotted var(--muted)}
+
+/* transfer + practices */
+.transfer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:18px}
+.transfer{background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.transfer .t{font-family:var(--serif);font-weight:700;font-size:14.5px;color:var(--ink)}
+.transfer .d{font-size:12.5px;color:var(--muted);margin-top:6px}
+.practices{display:grid;gap:8px;margin-top:16px}
+.practices div{display:flex;gap:10px;font-size:13.5px;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.practices span.n{font-family:var(--serif);color:var(--gold);min-width:18px}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .hero__img{animation:none}
+  *{transition:none!important}
+}
+
 @media (max-width:900px){
   .summary{grid-template-columns:1fr 1fr}
   .flight-grid{grid-template-columns:1fr}
@@ -480,27 +570,50 @@ footer h4{font-family:var(--serif);color:#f4ead8;margin:0 0 10px;font-size:15px}
   .gallery{grid-template-columns:1fr 1fr;gap:8px}
   .gallery figure{height:140px}
   .gallery figure:first-child{grid-column:1/-1;height:180px}
-  .timeline:before{left:76px}
+  .timeline:before{left:89px}
   .tl{grid-template-columns:76px 1fr;gap:14px}
   .tl__time{font-size:12.5px}
   .tl__body{padding-left:18px}
   .tl__act{font-size:15px}
   .sec-head{flex-wrap:wrap;gap:8px}
   .sec-head .sub{margin-left:0;width:100%}
+  .nav{position:sticky}
+  .nav__in{mask-image:linear-gradient(90deg,#000 88%,transparent)}
+  .table-wrap{border:0;background:transparent;overflow:visible}
+  table{min-width:0}
+  thead{display:none}
+  tbody tr{display:grid;grid-template-columns:1fr;gap:2px;background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+  tbody td{border:0;padding:2px 0}
+  tbody td:nth-child(1){font-weight:600}
+  tbody td:nth-child(2):before{content:"方式　";color:var(--muted);font-size:11px}
+  tbody td:nth-child(3):before{content:"時間　";color:var(--muted);font-size:11px}
+  tbody td.fare{white-space:normal}
   .summary{margin-top:-40px;gap:10px}
   .stat{padding:14px}
   .stat .v{font-size:17px}
 }
 @media print{
-  .nav,.countdown,details.notes{display:none}
-  .hero{min-height:60vh}
-  body{background:#fff}
-  section{padding:32px 0;break-inside:avoid}
-  .day{break-before:page}
+  .nav,.countdown,.skip-link,.plans{display:none}
+  body{background:#fff;font-size:11pt}
+  .hero{min-height:auto;color:var(--ink);background:#fff;border-bottom:2px solid var(--ink)}
+  .hero__img,.hero::after{display:none}
+  .hero h1 em{color:var(--ink)}
+  .hero .lede{color:#333}
+  .chip{border-color:#999;background:#fff;color:#111}
+  section{padding:22px 0}
+  .day{break-before:page;padding:18px 0}
+  .day:first-child{break-before:auto}
+  .gallery{display:none}
+  .tl,.meal,.card,.transfer,.check{break-inside:avoid}
+  details.notes{display:block}
+  details.notes[open] summary{display:none}
+  a{color:#000;text-decoration:none}
+  footer{background:#fff;color:#333}
 }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#overview">跳至主要內容</a>
 <header class="hero">
   <div class="hero__img"></div>
   <div class="countdown"><div class="n" id="cd">—</div><div class="t">DAYS TO GO</div></div>
@@ -519,10 +632,10 @@ footer h4{font-family:var(--serif);color:#f4ead8;margin:0 0 10px;font-size:15px}
 
 <nav class="nav"><div class="nav__in wrap" id="nav"></div></nav>
 
-<div class="wrap"><div class="summary" id="summary"></div></div>
+<div class="wrap"><div class="summary" id="summary"></div><div class="alerts" id="alerts"></div></div>
 
 <section id="overview"><div class="wrap">
-  <div class="sec-head"><span class="no">01</span><h2>航班與住宿</h2><span class="sub">2026-11 查核 · 出發前重查</span></div>
+  <div class="sec-head"><span class="no">FLIGHTS</span><h2>航班與住宿</h2><span class="sub">2026-11 查核 · 出發前重查</span></div>
   <div class="flight-grid">
     <div class="card">
       <div class="card__img" style="background-image:url(assets/img/kix.jpg)"></div>
@@ -538,17 +651,21 @@ footer h4{font-family:var(--serif);color:#f4ead8;margin:0 0 10px;font-size:15px}
 <main id="days"></main>
 
 <section id="transport"><div class="wrap">
-  <div class="sec-head"><span class="no">03</span><h2>交通與票價速查</h2><span class="sub">大人／小孩（日圓）</span></div>
+  <div class="sec-head"><span class="no">TRAVEL</span><h2>交通與票價速查</h2><span class="sub">大人／小孩（日圓）</span></div>
   <div class="table-wrap"><table><thead><tr><th>區間</th><th>方式</th><th>時間</th><th>票價</th></tr></thead><tbody id="transport-body"></tbody></table></div>
+  <h3 class="serif" style="margin:34px 0 6px;font-size:19px">大阪站／梅田轉乘小抄</h3>
+  <div class="transfer-grid" id="transfer-body"></div>
+  <h3 class="serif" style="margin:38px 0 6px;font-size:19px">住宿實務</h3>
+  <div class="practices" id="practices-body"></div>
 </div></section>
 
 <section id="tickets"><div class="wrap">
-  <div class="sec-head"><span class="no">04</span><h2>門票與場館</h2><span class="sub">價格為 2026-11 查得</span></div>
+  <div class="sec-head"><span class="no">TICKETS</span><h2>門票與場館</h2><span class="sub">價格為 2026-11 查得</span></div>
   <div class="tix" id="tickets-body"></div>
 </div></section>
 
 <section id="checklist"><div class="wrap">
-  <div class="sec-head"><span class="no">05</span><h2>行前重查清單</h2><span class="sub">勾選狀態存在這台裝置</span></div>
+  <div class="sec-head"><span class="no">CHECK</span><h2>行前重查清單</h2><span class="sub">勾選狀態存在這台裝置</span></div>
   <div class="check">
     <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>完成度</span><span id="progress-txt">0 / 0</span></div>
     <div class="bar"><i id="progress-bar"></i></div>
@@ -559,7 +676,7 @@ footer h4{font-family:var(--serif);color:#f4ead8;margin:0 0 10px;font-size:15px}
 </div></section>
 
 <section id="glossary"><div class="wrap">
-  <div class="sec-head"><span class="no">06</span><h2>常用日語對照</h2><span class="sub">站名與地名</span></div>
+  <div class="sec-head"><span class="no">WORDS</span><h2>常用日語對照</h2><span class="sub">站名與地名</span></div>
   <div class="gloss" id="gloss-body"></div>
 </div></section>
 
@@ -576,7 +693,9 @@ footer h4{font-family:var(--serif);color:#f4ead8;margin:0 0 10px;font-size:15px}
 const DATA = __DATA__;
 const $ = (s,r=document)=>r.querySelector(s);
 const el = (tag, cls, html) => { const n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n; };
-const esc = s => (s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https?:\/\//i.test(String(u||"")) ? esc(u) : "#";
+const bold = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 const maps = q => "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);
 
 /* countdown */
@@ -593,10 +712,15 @@ navItems.forEach(([id,label])=>{ const a=el("a",null,label); a.href="#"+id; nav.
 let sections=[];
 function markNav(){
   sections=[...document.querySelectorAll("section[id], .day[id]")];
+  if(!sections.length) return;
+  const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 8;
   const y=window.scrollY+130;
   let cur=sections[0];
-  for(const s of sections){ if(s.offsetTop<=y) cur=s; }
-  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+cur.id));
+  if(atBottom){ cur=sections[sections.length-1]; }
+  else { for(const s of sections){ if(s.offsetTop<=y) cur=s; } }
+  let active=null;
+  document.querySelectorAll("#nav a").forEach(a=>{ const on=a.getAttribute("href")==="#"+cur.id; a.classList.toggle("on", on); if(on) active=a; });
+  if(active && window.innerWidth<900){ active.scrollIntoView({inline:"center", block:"nearest", behavior:"smooth"}); }
 }
 window.addEventListener("scroll", markNav, {passive:true});
 window.addEventListener("resize", markNav);
@@ -612,14 +736,24 @@ const summary = $("#summary");
 });
 
 /* flights */
-if(DATA.flights[0]){
-  const f=DATA.flights[0], b=DATA.flights[1];
+const FL = DATA.flights || {rows:[],warnings:[]};
+if(FL.rows.length){
+  const f=FL.rows[0], b=FL.rows[1];
   $("#flight-out").innerHTML = `
     <div class="kv"><b>去程</b><span>${esc(f.date)} ${esc(f.flight)}</span></div>
     <div class="kv"><b>時間</b><span>${esc(f.time)}</span></div>
     <div class="kv"><b>備註</b><span>${esc(f.note)}</span></div>
     ${b?`<div class="kv"><b>回程</b><span>${esc(b.date)} ${esc(b.flight)}</span></div>
-    <div class="kv"><b>時間</b><span>${esc(b.time)}</span></div>`:""}`;
+    <div class="kv"><b>時間</b><span>${esc(b.time)}</span></div>
+    <div class="kv"><b>備註</b><span>${esc(b.note)}</span></div>`:""}`;
+}
+if(FL.warnings && FL.warnings.length){
+  $("#flight-out").insertAdjacentHTML("beforeend",
+    FL.warnings.map(w=>`<div class="banner"><strong>需確認</strong>　${bold(w.text)} ${w.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}</div>`).join(""));
+}
+const alerts = $("#alerts");
+if(DATA.limits && DATA.limits.length){
+  alerts.innerHTML = DATA.limits.map(t=>`<div class="alert"><span class="ico">⚠</span><div>${bold(t)}</div></div>`).join("");
 }
 const hotel=$("#hotel-name"); if(hotel) hotel.textContent = DATA.hotel.name;
 DATA.hotel.items.slice(0,5).forEach(it=>{
@@ -632,18 +766,21 @@ const dayWrap = $("#days");
 DATA.days.forEach(d=>{
   const sec = el("section","day"); sec.id="day-"+d.no;
   const cfg = (DATA.meta.days||{})[String(d.no)] || {};
-  const gallery = (cfg.gallery||[]).map(slug=>`<figure><img src="assets/img/${slug}.jpg" alt="" loading="lazy"><figcaption>${esc((DATA.meta.captions||{})[slug] || (DATA.credits[slug]||{}).title || "")}</figcaption></figure>`).join("");
+  const gallery = (cfg.gallery||[]).map(slug=>`<figure><img src="assets/img/${slug}.jpg" alt="${esc((DATA.meta.captions||{})[slug]||"")}" loading="lazy"><figcaption>${esc((DATA.meta.captions||{})[slug] || (DATA.credits[slug]||{}).title || "")}</figcaption></figure>`).join("");
   sec.innerHTML = `
     <div class="wrap">
       <div class="day__head">
         <div class="day__no">0${d.no}<small>DAY ${d.no}</small></div>
-        <div class="day__title"><h3>${esc(d.title)}</h3><div class="date">${esc(d.date)}（${esc(d.weekday)}）${cfg.label? " · "+esc(cfg.label):""}</div></div>
+        <div class="day__title"><h2>${esc(d.title)}</h2><div class="date">${esc(d.date)}（${esc(d.weekday)}）${cfg.label? " · "+esc(cfg.label):""}</div></div>
       </div>
       ${gallery?`<div class="gallery">${gallery}</div>`:""}
       <div class="plan-host"></div>
       <div class="meals-host"></div>
     </div>`;
   const host = sec.querySelector(".plan-host");
+  if(d.decision && d.decision.length){
+    host.insertAdjacentHTML("beforebegin", `<div class="decision"><b>決策與提醒</b><ul>${d.decision.map(n=>`<li>${bold(n.text)}${n.links.map(l=>` <a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}</li>`).join("")}</ul></div>`);
+  }
   const renderPlan = (p, idx) => {
     host.querySelectorAll(".plan-body").forEach(n=>n.remove());
     const body = el("div","plan-body");
@@ -652,30 +789,31 @@ DATA.days.forEach(d=>{
         <li class="tl">
           <div class="tl__time">${esc(r.time)}</div>
           <div class="tl__body">
-            <div class="tl__act">${esc(r.activity)}</div>
-            ${r.transport && r.transport!=="—" ? `<div class="tl__tr"><span class="mode">移動</span>${esc(r.transport)}</div>`:""}
-            ${r.note?`<div class="tl__note">${esc(r.note)}</div>`:""}
+            <div class="tl__act">${bold(r.activity)}${r.optional?'<span class="tag-opt">可選</span>':""}</div>
+            ${r.transport && r.transport!=="—" ? `<div class="tl__tr"><span class="mode">移動</span>${bold(r.transport)}</div>`:""}
+            ${r.note?`<div class="tl__note">${bold(r.note)}</div>`:""}
           </div>
         </li>`).join("")}</ul>
-      ${p.notes.length?`<details class="notes"><summary>行程細節與提醒（${p.notes.length}）</summary><ul>${p.notes.map(n=>`<li>${esc(n.text)}${n.links.map(l=>` <a href="${l.url}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}</li>`).join("")}</ul></details>`:""}`;
+      ${p.notes.length?`<details class="notes"><summary>行程細節與提醒（${p.notes.length}）</summary><ul>${p.notes.map(n=>`<li>${esc(n.text)}${n.links.map(l=>` <a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}</li>`).join("")}</ul></details>`:""}`;
     host.appendChild(body);
-    host.querySelectorAll(".plan-tab").forEach((b,i)=>b.classList.toggle("on",i===idx));
+    host.querySelectorAll(".plan-tab").forEach((b,i)=>{b.classList.toggle("on",i===idx); b.setAttribute("aria-pressed", i===idx?"true":"false");});
   };
+  if(!d.plans || !d.plans.length){ dayWrap.appendChild(sec); return; }
   if(d.plans.length>1){
     const tabs = el("div","plans");
-    d.plans.forEach((p,i)=>{ const b=el("button","plan-tab","Plan "+p.key); b.onclick=()=>renderPlan(p,i); tabs.appendChild(b); });
+    d.plans.forEach((p,i)=>{ const b=el("button","plan-tab","Plan "+p.key); b.type="button"; b.setAttribute("aria-pressed", i===0?"true":"false"); b.onclick=()=>{renderPlan(p,i)}; tabs.appendChild(b); });
     host.appendChild(tabs);
   }
   renderPlan(d.plans[0],0);
 
   const mealsHost = sec.querySelector(".meals-host");
   if(d.meals.length){
-    mealsHost.appendChild(el("div","sec-head","<span class=\"no\">EAT</span><h2 style=\"font-size:20px\">用餐安排</h2>"));
+    mealsHost.appendChild(el("div","sec-head","<span class=\"no\">EAT</span><h3 style=\"font-size:20px;margin:0\">用餐安排</h3>"));
     const grid = el("div","meals");
     d.meals.forEach(m=>{
       const box = el("div","meal");
       box.innerHTML = `<div class="slot">${esc(m.slot)}</div><div class="area">${esc(m.area)}</div>
-        <ol>${m.items.map(it=>`<li><div><div class="nm">${esc(it.name)}</div><div class="dt">${esc(it.detail)}</div>${it.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}</div></li>`).join("")}</ol>
+        <ol>${m.items.map((it,i)=>`<li><div><div class="nm">${esc(it.name)}${i===0?'<span class="pick">首選</span>':""}</div><div class="dt">${esc(it.detail)}</div>${it.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}<a class="maps" href="${maps(it.name)}" target="_blank" rel="noopener">地圖</a></div></li>`).join("")}</ol>
         ${m.note?`<div class="note">${esc(m.note)}</div>`:""}`;
       grid.appendChild(box);
     });
@@ -686,18 +824,20 @@ DATA.days.forEach(d=>{
 
 /* transport */
 const tb=$("#transport-body");
-DATA.transport.forEach(r=>{ const tr=el("tr"); tr.innerHTML=`<td>${esc(r.from)}</td><td>${esc(r.way)}</td><td>${esc(r.time)}</td><td class="fare">¥ ${esc(r.fare)}</td>`; tb.appendChild(tr); });
+DATA.transport.forEach(r=>{ const tr=el("tr"); tr.innerHTML=`<td>${esc(r.from)}</td><td>${esc(r.way)}</td><td>${esc(r.time)}</td><td class="fare">${esc(r.fare)}</td>`; tb.appendChild(tr); });
 
 /* tickets */
 const tix=$("#tickets-body");
-DATA.tickets.forEach(t=>{ const d=el("div","t"); d.innerHTML=`<div class="n">${esc(t.name)}</div><div class="d">${esc(t.detail)}</div>${t.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join(" ")}`; tix.appendChild(d); });
+DATA.tickets.forEach(t=>{ const d=el("div","t"); d.innerHTML=`<div class="n">${esc(t.name)}</div><div class="d">${esc(t.detail)}</div>${t.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join(" ")}`; tix.appendChild(d); });
 
 /* checklist */
 const key="kansai2027-check";
-const saved=JSON.parse(localStorage.getItem(key)||"{}");
+let saved={};
+try{ saved=JSON.parse(localStorage.getItem(key)||"{}"); }catch(e){ saved={}; }
+const h=(s)=>{ let x=0; for(let i=0;i<s.length;i++){ x=(x*31+s.charCodeAt(i))|0; } return "c"+(x>>>0).toString(36); };
 const cb=$("#checklist-body");
-DATA.checklist.forEach((t,i)=>{
-  const id="c"+i;
+DATA.checklist.forEach((t)=>{
+  const id=h(t);
   const l=el("label"); l.innerHTML=`<input type="checkbox" data-id="${id}" ${saved[id]?"checked":""}><span>${esc(t)}</span>`;
   cb.appendChild(l);
 });
@@ -706,7 +846,8 @@ function syncProgress(){
   const done=boxes.filter(b=>b.checked).length;
   $("#progress-txt").textContent=`${done} / ${boxes.length}`;
   $("#progress-bar").style.width=(boxes.length?done/boxes.length*100:0)+"%";
-  const state={}; boxes.forEach(b=>state[b.dataset.id]=b.checked); localStorage.setItem(key,JSON.stringify(state));
+  const state={}; boxes.forEach(b=>state[b.dataset.id]=b.checked);
+  try{ localStorage.setItem(key,JSON.stringify(state)); }catch(e){}
 }
 cb.addEventListener("change",syncProgress); syncProgress();
 
@@ -714,13 +855,20 @@ cb.addEventListener("change",syncProgress); syncProgress();
 const ob=$("#open-body");
 DATA.open.forEach(o=>{ const d=el("div","row"); d.innerHTML=`<span class="badge ${o.done?"done":"todo"}">${o.done?"已定":"待定"}</span><span>${esc(o.text)}</span>`; ob.appendChild(d); });
 
+/* transfer + practices */
+const tb2=$("#transfer-body");
+(DATA.transfer||[]).forEach(t=>{ const d=el("div","transfer"); d.innerHTML=`<div class="t">${esc(t.title)}</div>${t.detail?`<div class="d">${esc(t.detail)}</div>`:""}${t.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--vermilion)">${esc(l.text)}</a>`).join(" ")}`; tb2.appendChild(d); });
+const pb=$("#practices-body");
+(DATA.practices||[]).forEach((t,i)=>{ const d=el("div"); d.innerHTML=`<span class="n">${i+1}</span><span>${esc(t)}</span>`; pb.appendChild(d); });
+
 /* glossary */
 const gb=$("#gloss-body");
 DATA.glossary.forEach(([jp,zh])=>{ const d=el("div"); d.innerHTML=`<span class="jp">${esc(jp)}</span><span class="zh">${esc(zh)}</span>`; gb.appendChild(d); });
 
 /* credits */
 const cr=$("#credits");
-Object.entries(DATA.credits).forEach(([slug,c])=>{
+const used=new Set([...document.querySelectorAll('.gallery img')].map(i=>i.getAttribute('src').split('/').pop().replace('.jpg','')).concat(['hero']));
+Object.entries(DATA.credits).filter(([slug])=>used.has(slug)).forEach(([slug,c])=>{
   const d=el("div"); d.innerHTML=`${esc(slug)} · ${esc((c.artist||"").slice(0,60))} · ${esc(c.license||"")} · <a href="${c.page}" target="_blank" rel="noopener">Commons</a>`; cr.appendChild(d);
 });
 </script>
@@ -738,11 +886,13 @@ def render(data: dict) -> str:
     payload = json.dumps({**data, "meta": public_meta}, ensure_ascii=False, separators=(",", ":"))
     for src, dst in ((data["meta"].get("privacy") or {}).get("replacements") or {}).items():
         payload = payload.replace(src, dst)
+    payload = payload.replace("</", "<\\/")
     return html.replace("__DATA__", payload)
 
 
 def build() -> None:
     data = build_data()
+    (ROOT / "_shots").mkdir(exist_ok=True)
     (ROOT / "_shots/data.json").write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
     (ROOT / "index.html").write_text(render(data), encoding="utf-8")
     days = len(data["days"])
