@@ -665,7 +665,7 @@ footer h4{font-family:var(--display);color:#fff;margin:0 0 10px;font-size:14px;f
       <div class="hero__main">
         <div class="kicker">KANSAI · JAPAN · FAMILY TRIP</div>
         <h1>KANSAI<span class="cn">關西 2027</span></h1>
-        <p class="lede">大阪梅田為基地，一天京都、一天神戶、一天宇治。<span class="nw">二大一小</span>，慢慢走、好好吃。</p>
+        <p class="lede">大阪梅田為基地，一天京都、一天神戶、一天宇治。<span class="nw">二大一小</span>，<span class="nw">慢慢走、好好吃。</span></p>
         <div class="dest">
           <span><b>5</b> DAYS</span>
           <span><b>4</b> NIGHTS</span>
