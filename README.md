@@ -43,16 +43,21 @@
 要換圖：把同名 `.jpg` 覆蓋進 `assets/img/`，或改 `site_meta.json` 的 `days.*.gallery` 與 `captions`。
 首圖固定在 CSS `.hero__img`（`assets/img/hero.jpg`）。
 
-## 部署（尚未執行）
+## 部署（已上線）
 
-靜態檔案，可直接丟 Vercel / Netlify / Cloudflare Pages：
+- 網址：https://richardliang103-droid.github.io/kansai-2027/
+- Repo：https://github.com/richardliang103-droid/kansai-2027（public，GitHub Pages）
+- 發布：雙擊 `發布網站.command`，或 `python3 build_site.py && git add -A && git commit -m update && git push`
+- Pages 約 1 分鐘後更新；頁面已設 `noindex`，不會被搜尋引擎索引，但仍可用連結分享。
 
-```bash
-cd ~/Sites/kansai-2027
-npx vercel deploy --prod        # 首次需登入
-```
+### 分享前的隱私處理
 
-若要讓家人從手機看，建議部署；內容含訂房價格，部署前先確認是否要改成 private / 密碼保護。
+`site_meta.json` 的 `privacy` 區塊會在**建置時**移除／替換內容（不是只藏在畫面裡）：
+
+- `hide_hotel_rows`：不輸出訂房金額、內部研究連結
+- `replacements`：把「Agoda」改成「訂房平台」
+
+目前公開頁面不含房價（NT$23,800）與內部筆記連結；Obsidian 原稿不受影響。
 
 ## 已知限制
 
