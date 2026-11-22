@@ -70,5 +70,19 @@
    "Agoda": "訂房平台"
   }
  },
- "site_url": "https://richardliang103-droid.github.io/kansai-2027/"
+ "site_url": "https://richardliang103-droid.github.io/kansai-2027/",
+ "day_colors": {
+  "1": "#D91E2A",
+  "2": "#E85D04",
+  "3": "#0072BC",
+  "4": "#6F2C91",
+  "5": "#00875A"
+ },
+ "day_codes": {
+  "1": "D1",
+  "2": "D2",
+  "3": "D3",
+  "4": "D4",
+  "5": "D5"
+ }
 }
