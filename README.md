@@ -69,11 +69,11 @@
 
 ## 視覺系統（KANSAI RAIL 2027）
 
-方向由 agy（`gemini-4-hydrogen-high`）提出，初版為車站導視（KANSAI RAIL 2027）；最終依使用者回饋改為**日式無印風**：暖紙白、細灰線、低彩度、輕字重、大留白。
+視覺系統採用 [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) 的 **linear.app DESIGN.md**：近黑畫布 `#010102`、四階 surface 面板、1px hairline、單一薰衣草藍 `#5E6AD2`、Inter 600 負字距大標、8/12/16px 圓角。
 
-- 色彩：底 `#F6F4EE`、紙白 `#FCFBF7`、墨 `#3A3833`、灰線 `#DFDACF`；每日色 D1 `#A9715C`、D2 `#B08C5B`、D3 `#6E7F86`、D4 `#8B8091`、D5 `#6F7A5F`
-- 字體：Noto Sans TC（標題／內文，300–500）、IBM Plex Sans（拉丁）、IBM Plex Mono（時刻／票價）
-- 規則：0 圓角、1px 細線、無陰影；每日以 2px 色條與低彩度圓點識別
-- 元件：首屏＝輕字重標題＋摘要卡；每日＝細線牌頭；時間軸＝1px 軌道＋空心小圓點（時間欄右留 24px，圓點不壓字）；用餐＝細框卡；交通＝大人／小孩分欄
+- 色彩：canvas `#010102`、surface-1 `#0F1011`、surface-2 `#141516`、hairline `#23252A`、ink `#F7F8F8`、accent `#5E6AD2`
+- 字體：Inter 400/500/600（拉丁與數字）、Noto Sans TC、JetBrains Mono（時刻／票價）
+- 規則：surface ladder 分層、1px hairline、無陰影、單一 accent；按鈕 8px、卡片 12px、面板 16px
+- 元件：首屏＝display 大標＋CTA＋資訊面板；每日＝surface-1 app 面板；時間軸＝髮絲線＋藍點列表；用餐＝面板卡；交通＝資料表（大人／小孩右對齊等寬數字）
 - 改色只改 `site_meta.json` 的 `day_colors` 與 CSS `:root`
 
