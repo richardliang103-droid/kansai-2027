@@ -869,10 +869,11 @@ td.note{color:#62666D;font-size:12px}
 .practices div{border-bottom:1px solid #23252A;color:#D0D6E0;font-size:14px;padding:12px 18px}
 .practices span.n{color:#62666D;font-family:var(--mono)}
 .check{background:#0F1011;border:1px solid #23252A;border-radius:12px;padding:24px}
-.check .bar{background:#141516;border:1px solid #23252A;height:6px;border-radius:999px;overflow:hidden}
+.check .bar{background:#1A1C20;border:1px solid #2B2E34;height:8px;border-radius:999px;overflow:hidden}
 .check .bar i{background:#5E6AD2}
-.check label{border-bottom:1px solid #1A1C20;color:#D0D6E0;font-size:14px;padding:11px 0}
-.check input{accent-color:#5E6AD2}
+.check label{border-bottom:1px solid #1A1C20;color:#D0D6E0;font-size:14px;padding:12px 4px;border-radius:6px}
+.check label:hover{background:#141516}
+.check input{accent-color:#5E6AD2;width:16px;height:16px}
 .open .row{background:#0F1011;border:1px solid #23252A;border-radius:8px;color:#D0D6E0;font-size:13.5px}
 .badge{border-radius:999px;font-family:var(--mono);font-size:9.5px;padding:2px 8px;letter-spacing:.02em}
 .badge.done{background:rgba(39,166,68,.14);border:1px solid rgba(39,166,68,.4);color:#4CC66B}
