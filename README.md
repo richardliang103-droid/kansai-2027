@@ -77,3 +77,11 @@
 - 元件：首屏＝display 大標＋CTA＋資訊面板；每日＝surface-1 app 面板；時間軸＝髮絲線＋藍點列表；用餐＝面板卡；交通＝資料表（大人／小孩右對齊等寬數字）
 - 改色只改 `site_meta.json` 的 `day_colors` 與 CSS `:root`
 
+
+
+## 佈景主題
+
+- 右上角切換鈕：Light / Dark，狀態存在 `localStorage("kansai-theme")`，重整後保留
+- 首次造訪跟隨系統 `prefers-color-scheme`，預設深色
+- 淺色版沿用 Linear 的 inverse token（白底、`#F5F6F6` 面板、`#E6E7EB` hairline），accent 不變
+- 列印一律強制白底黑字，不受當前模式影響

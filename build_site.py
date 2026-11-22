@@ -342,6 +342,7 @@ HTML = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#010102">
 <title>__TITLE__</title>
 <meta name="description" content="2027 關西 5 天 4 夜家庭行程：大阪梅田基地，京都、神戶、宇治。">
 <meta name="robots" content="noindex, nofollow">
@@ -424,7 +425,8 @@ a{color:inherit}
 
 /* ---------- nav ---------- */
 .nav{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--ink)}
-.nav__in{display:flex;align-items:center;gap:4px;height:52px;overflow-x:auto;scrollbar-width:none}
+.navrow{display:flex;align-items:center;gap:10px}
+.nav__in{display:flex;align-items:center;gap:4px;height:52px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
 .nav__in::-webkit-scrollbar{display:none}
 .nav .brand{font-family:var(--display);font-size:14px;letter-spacing:.02em;margin-right:16px;white-space:nowrap}
 .nav a{white-space:nowrap;text-decoration:none;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-2);padding:6px 10px;border:1px solid transparent}
@@ -895,6 +897,139 @@ footer h4{font-family:var(--sans);font-weight:600;font-size:13px;color:#F7F8F8;l
   .lede,.tl__tr,.tl__note,.stat .s,.meal .dt{color:#333 !important}
 }
 
+
+/* ================= LIGHT THEME (Linear inverse) ================= */
+html[data-theme="light"]{
+  --bg:#FFFFFF; --panel:#F5F6F6; --ink:#08090A; --ink-2:#3C4149; --muted:#6B7280;
+  --rule:#E6E7EB; --rule-dark:#D7D9DE; --accent:#5E6AD2;
+}
+[data-theme="light"] body{background:#FFFFFF;color:#08090A}
+[data-theme="light"] .nav{background:rgba(255,255,255,.82);border-bottom-color:#E6E7EB}
+[data-theme="light"] .nav .brand{color:#08090A}
+[data-theme="light"] .nav a{color:#6B7280}
+[data-theme="light"] .nav a:hover{background:#F5F6F6;color:#08090A;border-color:#E6E7EB}
+[data-theme="light"] .nav a.on{background:#F1F2F4;color:#08090A;border-color:#E1E3E7}
+[data-theme="light"] .hero,[data-theme="light"] .hero__stage{background:#FFFFFF}
+[data-theme="light"] .hero{border-bottom-color:#E6E7EB}
+[data-theme="light"] .hero__bar{background:#FFFFFF;border-bottom-color:#E6E7EB;color:#6B7280}
+[data-theme="light"] .hero__bar .tag{background:#F5F6F6;color:#3C4149;border-color:#E6E7EB}
+[data-theme="light"] .hero .kicker{color:#6B7280}
+[data-theme="light"] .hero h1{color:#08090A}
+[data-theme="light"] .hero h1 .cn{color:#3C4149}
+[data-theme="light"] .hero .lede{color:#6B7280}
+[data-theme="light"] .dest span{background:#FFFFFF;border-color:#E1E3E7;color:#6B7280}
+[data-theme="light"] .dest span b{color:#08090A}
+[data-theme="light"] .btn-secondary{background:#FFFFFF;color:#08090A;border-color:#E1E3E7}
+[data-theme="light"] .btn-secondary:hover{background:#F5F6F6;border-color:#C9CCD2}
+[data-theme="light"] .ticket{background:#FAFAFB;border-color:#E6E7EB;box-shadow:inset 0 1px 0 rgba(0,0,0,.03)}
+[data-theme="light"] .ticket .row{border-bottom-color:#E6E7EB}
+[data-theme="light"] .ticket .k{color:#6B7280}
+[data-theme="light"] .ticket .v{color:#08090A}
+[data-theme="light"] .ticket .cd{border-top-color:#E6E7EB}
+[data-theme="light"] .ticket .cd .t{color:#6B7280}
+[data-theme="light"] .route{border-top-color:#E6E7EB;background:#FFFFFF}
+[data-theme="light"] .route__in:before{background:#D7D9DE}
+[data-theme="light"] .route a{border-right-color:#E6E7EB}
+[data-theme="light"] .route a:hover{background:#F7F8FA}
+[data-theme="light"] .route .dot{background:#5E6AD2;box-shadow:0 0 0 3px rgba(94,106,210,.12)}
+[data-theme="light"] .route .code{color:#6B7280}
+[data-theme="light"] .route .nm{color:#3C4149}
+[data-theme="light"] .sec-head{border-bottom-color:#E6E7EB}
+[data-theme="light"] .sec-head .no,[data-theme="light"] .sec-head .sub{color:#6B7280}
+[data-theme="light"] .sec-head h2{color:#08090A}
+[data-theme="light"] .summary{background:#FAFAFB;border-color:#E6E7EB}
+[data-theme="light"] .stat{border-right-color:#E6E7EB}
+[data-theme="light"] .stat .k{color:#6B7280}
+[data-theme="light"] .stat .v{color:#08090A}
+[data-theme="light"] .stat .s{color:#6B7280}
+[data-theme="light"] .alert{background:#FAFAFB;border-color:#E6E7EB;border-left-color:#5E6AD2;color:#3C4149}
+[data-theme="light"] .banner{background:#FAFAFB;border-color:#E6E7EB;color:#3C4149}
+[data-theme="light"] .banner strong{color:#4F5AC0}
+[data-theme="light"] .card{background:#FAFAFB;border-color:#E6E7EB}
+[data-theme="light"] .card__img{border-bottom-color:#E6E7EB}
+[data-theme="light"] .card h3{color:#08090A}
+[data-theme="light"] .kv{border-bottom-color:#E6E7EB;color:#3C4149}
+[data-theme="light"] .kv b{color:#6B7280}
+[data-theme="light"] .day,[data-theme="light"] .day:nth-child(even){background:#FFFFFF}
+[data-theme="light"] .day .wrap{background:#FAFAFB;border-color:#E6E7EB;box-shadow:inset 0 1px 0 rgba(0,0,0,.02)}
+[data-theme="light"] .day__head{border-bottom-color:#E6E7EB}
+[data-theme="light"] .day__no b{color:#6B7280}
+[data-theme="light"] .day__no small{background:#F1F2F4;border-color:#E1E3E7;color:#6B7280}
+[data-theme="light"] .day__title .date{color:#6B7280}
+[data-theme="light"] .day__title h2{color:#08090A}
+[data-theme="light"] .gallery figure{background:#F5F6F6;border-color:#E6E7EB}
+[data-theme="light"] .gallery figcaption{background:rgba(255,255,255,.94);border-top-color:#E6E7EB;color:#6B7280}
+[data-theme="light"] .decision{background:#F5F6F6;border-color:#E6E7EB;color:#3C4149}
+[data-theme="light"] .decision b{color:#08090A}
+[data-theme="light"] .plans{background:#F1F2F4;border-color:#E6E7EB}
+[data-theme="light"] .plan-tab{color:#6B7280}
+[data-theme="light"] .plan-tab.on{background:#FFFFFF;color:#08090A;box-shadow:0 1px 2px rgba(8,9,10,.06)}
+[data-theme="light"] .plan-name{color:#6B7280}
+[data-theme="light"] .timeline:before{background:#E1E3E7}
+[data-theme="light"] .tl__body{border-bottom-color:#EDEEF1}
+[data-theme="light"] .tl__time{color:#5F6673}
+[data-theme="light"] .tl__body:before{background:#FFFFFF;border-color:#5E6AD2;box-shadow:0 0 0 3px rgba(94,106,210,.10)}
+[data-theme="light"] .tl__act{color:#08090A}
+[data-theme="light"] .tl__tr{color:#565C66}
+[data-theme="light"] .tl__tr .mode{background:#F5F6F6;border-color:#E6E7EB;color:#6B7280}
+[data-theme="light"] .tl__note{color:#565C66}
+[data-theme="light"] .tag-opt{background:#F5F6F6;border-color:#E6E7EB;color:#6B7280}
+[data-theme="light"] details.notes{border-top-color:#E6E7EB}
+[data-theme="light"] details.notes summary{color:#6B7280}
+[data-theme="light"] details.notes ul{color:#6B7280}
+[data-theme="light"] .meal{background:#FFFFFF;border-color:#E6E7EB}
+[data-theme="light"] .meal .slot{color:#6B7280}
+[data-theme="light"] .meal .area{color:#08090A}
+[data-theme="light"] .meal li{border-top-color:#EDEEF1}
+[data-theme="light"] .meal .nm{color:#08090A}
+[data-theme="light"] .meal .dt{color:#6B7280}
+[data-theme="light"] .meal a{color:#4F5AC0}
+[data-theme="light"] .meal .pick{background:rgba(94,106,210,.10);border-color:rgba(94,106,210,.35);color:#4F5AC0}
+[data-theme="light"] .meal .maps{color:#6B7280}
+[data-theme="light"] .table-wrap{background:#FFFFFF;border-color:#E6E7EB}
+[data-theme="light"] th{background:#F5F6F6;color:#6B7280;border-bottom-color:#E1E3E7}
+[data-theme="light"] td{border-bottom-color:#EDEEF1;color:#3C4149}
+[data-theme="light"] tbody tr:hover{background:#F7F8FA}
+[data-theme="light"] td.fare{color:#08090A}
+[data-theme="light"] td.note{color:#6B7280}
+[data-theme="light"] .tix .t{background:#FAFAFB;border-color:#E6E7EB}
+[data-theme="light"] .tix .n{color:#08090A}
+[data-theme="light"] .tix .d{color:#6B7280}
+[data-theme="light"] .tix a{color:#4F5AC0}
+[data-theme="light"] .transfer{background:#FAFAFB;border-color:#E6E7EB}
+[data-theme="light"] .transfer .t{color:#08090A}
+[data-theme="light"] .transfer .d{color:#6B7280}
+[data-theme="light"] .practices{background:#FAFAFB;border-color:#E6E7EB}
+[data-theme="light"] .practices div{border-bottom-color:#E6E7EB;color:#3C4149}
+[data-theme="light"] .practices span.n{color:#6B7280}
+[data-theme="light"] .check{background:#FAFAFB;border-color:#E6E7EB}
+[data-theme="light"] .check .bar{background:#E9EAEE;border-color:#DDE0E4}
+[data-theme="light"] .check label{border-bottom-color:#EDEEF1;color:#3C4149}
+[data-theme="light"] .check label:hover{background:#F5F6F6}
+[data-theme="light"] .check input:checked+span{color:#8A9099}
+[data-theme="light"] .open .row{background:#FAFAFB;border-color:#E6E7EB;color:#3C4149}
+[data-theme="light"] .badge.done{background:rgba(39,166,68,.10);border-color:rgba(39,166,68,.35);color:#1B7F35}
+[data-theme="light"] .badge.todo{background:rgba(94,106,210,.10);border-color:rgba(94,106,210,.35);color:#4F5AC0}
+[data-theme="light"] .gloss div{border-bottom-color:#E6E7EB}
+[data-theme="light"] .gloss .jp{color:#08090A}
+[data-theme="light"] .gloss .zh{color:#6B7280}
+[data-theme="light"] footer{background:#FFFFFF;border-top-color:#E6E7EB;color:#8A9099}
+[data-theme="light"] footer a{color:#6B7280}
+[data-theme="light"] footer h4{color:#08090A}
+[data-theme="light"] .credits{color:#6B7280}
+
+/* theme toggle */
+.theme-toggle{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-radius:999px;border:1px solid #23252A;background:#0F1011;color:#8A8F98;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer}
+.theme-toggle:hover{color:#F7F8F8;border-color:#34343A}
+.theme-toggle .ico{display:block}
+.theme-toggle .ico-sun{display:none}
+[data-theme="light"] .theme-toggle .ico-sun{display:block}
+[data-theme="light"] .theme-toggle .ico-moon{display:none}
+@media (max-width:600px){.theme-toggle .lbl{display:none}}
+[data-theme="light"] .theme-toggle{background:#FFFFFF;border-color:#E1E3E7;color:#6B7280}
+[data-theme="light"] .theme-toggle:hover{color:#08090A;border-color:#C9CCD2}
+@media (max-width:600px){.theme-toggle{margin-left:8px;padding:0 9px;width:32px;justify-content:center}}
+
 @media (max-width:900px){
   .hero__grid{grid-template-columns:1fr;gap:24px}
   .ticket{transform:none}
@@ -968,9 +1103,12 @@ footer h4{font-family:var(--sans);font-weight:600;font-size:13px;color:#F7F8F8;l
 }
 
 </style>
+<script>try{var _t=localStorage.getItem("kansai-theme");if(!_t&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches){_t="light";}if(_t==="light"){document.documentElement.setAttribute("data-theme","light");}}catch(e){}</script>
 </head>
 <body>
 <a class="skip-link" href="#overview">跳至主要內容</a>
+<nav class="nav"><div class="wrap navrow"><div class="nav__in" id="nav"></div></div></nav>
+
 <header class="hero">
   <div class="hero__bar"><div class="wrap">
     <span class="tag">KIX → OSAKA</span>
@@ -1010,8 +1148,6 @@ footer h4{font-family:var(--sans);font-weight:600;font-size:13px;color:#F7F8F8;l
     </div></div>
   </div></div>
 </header>
-
-<nav class="nav"><div class="nav__in wrap" id="nav"></div></nav>
 
 <section id="overview"><div class="wrap">
   <div class="sec-head"><span class="no">OVERVIEW</span><h2>行程總覽</h2><span class="sub">5 天 · 4 夜 · 大阪進出</span></div>
@@ -1091,6 +1227,26 @@ nav.appendChild(el("span","brand","KANSAI 2027"));
 const navItems = [["overview","總覽"],["transport","交通"],["tickets","門票"],["checklist","清單"],["glossary","日語"]];
 DATA.days.forEach(d=>navItems.splice(1+ (d.no-1),0,[`day-${d.no}`,`Day ${d.no}`]));
 navItems.forEach(([id,label])=>{ const a=el("a",null,label); a.href="#"+id; nav.appendChild(a); });
+const tbtn=el("button","theme-toggle");
+tbtn.type="button";
+const SUN='<svg class="ico ico-sun" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3.1 3.1l1.1 1.1M11.8 11.8l1.1 1.1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+const MOON='<svg class="ico ico-moon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M13.2 9.8A5.6 5.6 0 0 1 6.2 2.8a5.6 5.6 0 1 0 7 7Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+tbtn.innerHTML=SUN+MOON+'<span class="lbl">Light</span>';
+tbtn.setAttribute("aria-label","切換淺色／深色模式");
+const applyTheme=(t)=>{
+  document.documentElement.setAttribute("data-theme",t);
+  tbtn.querySelector(".lbl").textContent = t==="light" ? "Light" : "Dark";
+  tbtn.setAttribute("aria-pressed", t==="light" ? "true":"false");
+  const tc=document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.setAttribute("content", t==="light" ? "#FFFFFF" : "#010102");
+  try{ localStorage.setItem("kansai-theme",t); }catch(e){}
+};
+applyTheme(document.documentElement.getAttribute("data-theme")==="light" ? "light" : "dark");
+tbtn.addEventListener("click",()=>{
+  const cur=document.documentElement.getAttribute("data-theme")==="light" ? "light":"dark";
+  applyTheme(cur==="light" ? "dark":"light");
+});
+document.querySelector('.navrow').appendChild(tbtn);
 let sections=[];
 function markNav(){
   sections=[...document.querySelectorAll("section[id], .day[id]")];
