@@ -1,0 +1,74 @@
+{
+ "title": "2027 關西 5 天 4 夜",
+ "subtitle": "大阪梅田基地 · 京都 · 宇治 · 神戶",
+ "days": {
+  "1": {
+   "label": "抵達 · 臨空城 · 梅田",
+   "gallery": [
+    "rinku",
+    "kix"
+   ]
+  },
+  "2": {
+   "label": "USJ 或大阪購物日",
+   "gallery": [
+    "usj",
+    "dotonbori",
+    "okonomiyaki"
+   ]
+  },
+  "3": {
+   "label": "京都 · 宇治",
+   "gallery": [
+    "kinkakuji",
+    "kiyomizu",
+    "byodoin"
+   ]
+  },
+  "4": {
+   "label": "神戶 · 光之祭典",
+   "gallery": [
+    "kitano",
+    "meriken",
+    "luminarie"
+   ]
+  },
+  "5": {
+   "label": "梅田採買 · 返程",
+   "gallery": [
+    "umeda",
+    "takoyaki"
+   ]
+  }
+ },
+ "captions": {
+  "hero": "京都・東山黃昏",
+  "kix": "關西國際機場第一航廈",
+  "rinku": "臨空城 Premium Outlets",
+  "umeda": "大阪梅田天際線",
+  "usj": "日本環球影城園區",
+  "dotonbori": "道頓堀夜色",
+  "kinkakuji": "金閣寺",
+  "kiyomizu": "清水寺舞台",
+  "byodoin": "宇治・平等院鳳凰堂",
+  "uji": "宇治川",
+  "kitano": "神戶北野異人館・風見鶏の館",
+  "luminarie": "神戶光之祭典",
+  "meriken": "神戶港塔與美利堅公園",
+  "osaka_castle": "大阪城",
+  "okonomiyaki": "大阪燒",
+  "matcha": "宇治抹茶",
+  "kobe_beef": "神戶牛",
+  "takoyaki": "章魚燒"
+ },
+ "privacy": {
+  "hide_hotel_rows": [
+   "訂房",
+   "其他候選"
+  ],
+  "replacements": {
+   "Agoda": "訂房平台"
+  }
+ },
+ "site_url": "https://richardliang103-droid.github.io/kansai-2027/"
+}
