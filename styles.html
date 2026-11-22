@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>關西 2027 · 四種視覺方向</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#EDEBE6;color:#1b1b1b;font-family:"Inter","Noto Sans TC",sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.top{padding:56px 0 28px;border-bottom:1px solid #c9c5bb}
+.top h1{font-family:"Noto Sans TC";font-weight:300;font-size:clamp(26px,4vw,40px);letter-spacing:.06em;margin:0 0 10px}
+.top p{color:#6b665c;font-size:14px;max-width:44em;margin:0}
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.jump a{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.12em;text-decoration:none;color:#1b1b1b;border:1px solid #1b1b1b;padding:7px 12px;background:#fff}
+.jump a:hover{background:#1b1b1b;color:#fff}
+section.demo{padding:56px 0 20px}
+.dhead{display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;margin-bottom:18px}
+.dhead .tag{font-family:"Space Mono",monospace;font-size:12px;border:1px solid #1b1b1b;height:56px;display:grid;place-items:center;background:#fff}
+.dhead h2{font-family:"Noto Sans TC";font-weight:500;font-size:22px;margin:0;letter-spacing:.04em}
+.dhead .refs{color:#6b665c;font-size:12.5px;margin-top:4px}
+.dhead .why{color:#3f3b34;font-size:13px;margin-top:8px;max-width:52em}
+.stage{border:1px solid #bdb8ad;overflow:hidden}
+.note{font-size:12px;color:#6b665c;margin:10px 0 0;font-family:"Space Mono",monospace;letter-spacing:.02em}
+.foot{padding:70px 0 60px;color:#5c574d;font-size:13px}
+.foot h3{font-family:"Noto Sans TC";font-weight:500;color:#1b1b1b;font-size:18px}
+.foot ul{padding-left:18px}
+.foot li{margin-bottom:6px}
+
+/* ============ A · SWISS GRID ============ */
+.A{background:#fff;color:#111;padding:44px 44px 38px;position:relative}
+.A .micro{font-family:"Inter";font-size:10px;letter-spacing:.28em;color:#8a8a8a;text-transform:uppercase}
+.A .hero{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:end;border-bottom:1px solid #111;padding-bottom:22px}
+.A h3{font-family:"Noto Sans TC";font-weight:300;font-size:52px;line-height:1.05;letter-spacing:.02em;margin:10px 0 0}
+.A h3 small{display:block;font-size:13px;letter-spacing:.18em;font-weight:400;color:#666;margin-top:12px}
+.A .big{font-family:"Inter";font-weight:300;font-size:96px;line-height:.8;letter-spacing:-.05em}
+.A .big i{font-style:normal;color:#E2231A}
+.A .facts{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #ddd;margin-top:0}
+.A .facts div{padding:16px 0;border-right:1px solid #eee}
+.A .facts div:last-child{border-right:0}
+.A .facts dt{font-size:9.5px;letter-spacing:.2em;color:#999;font-family:"Inter"}
+.A .facts dd{margin:6px 0 0;font-size:13px;font-family:"Space Mono",monospace}
+.A .day{display:grid;grid-template-columns:64px 1fr auto;gap:16px;align-items:baseline;margin-top:28px;border-bottom:1px solid #111;padding-bottom:10px}
+.A .day b{font-family:"Inter";font-weight:300;font-size:40px;line-height:1;letter-spacing:-.03em}
+.A .day h4{margin:0;font-family:"Noto Sans TC";font-weight:500;font-size:16px}
+.A .day span{font-family:"Space Mono",monospace;font-size:10px;color:#888}
+.A .rows{margin-top:6px}
+.A .row{display:grid;grid-template-columns:86px 1fr;gap:18px;padding:13px 0;border-bottom:1px solid #eee}
+.A .row time{font-family:"Space Mono",monospace;font-size:11.5px;color:#666}
+.A .row p{margin:0;font-size:13px}
+.A .row p b{font-weight:600}
+.A .row small{display:block;color:#8a8a8a;font-size:11px;margin-top:2px}
+.A .meal{margin-top:22px;display:grid;grid-template-columns:150px 1fr;gap:20px;border-top:2px solid #111;padding-top:14px}
+.A .meal .k{font-size:10px;letter-spacing:.2em;color:#999}
+.A .meal ul{margin:0;padding:0;list-style:none;font-size:12.5px}
+.A .meal li{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dotted #ddd}
+.A .meal li i{font-style:normal;font-family:"Space Mono",monospace;font-size:11px;color:#666}
+
+/* ============ B · NEO-BRUTALIST ============ */
+.B{background:#F4F1E8;color:#0B0B0B;padding:38px;position:relative;overflow:hidden}
+.B .micro{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.2em;background:#0B0B0B;color:#fff;display:inline-block;padding:4px 8px}
+.B .hero{border:3px solid #0B0B0B;background:#fff;box-shadow:8px 8px 0 #0B0B0B;padding:22px 24px;margin-top:16px;position:relative}
+.B h3{font-family:"Anton",sans-serif;font-size:76px;line-height:.92;letter-spacing:-.01em;margin:6px 0 0;text-transform:uppercase}
+.B h3 em{font-style:normal;background:#E9FF00;padding:0 6px;box-decoration-break:clone}
+.B .sub{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.B .sub span{font-family:"Space Mono",monospace;font-size:10.5px;border:1.5px solid #0B0B0B;padding:3px 8px;background:#fff}
+.B .sub span.hot{background:#1B36FF;color:#fff;border-color:#1B36FF}
+.B .sticker{position:absolute;right:-10px;top:-16px;transform:rotate(6deg);background:#FF4D2E;color:#fff;border:2px solid #0B0B0B;font-family:"Space Mono",monospace;font-size:11px;padding:6px 10px;box-shadow:3px 3px 0 #0B0B0B}
+.B .day{display:flex;align-items:stretch;gap:0;margin-top:26px;border:3px solid #0B0B0B;background:#fff;box-shadow:6px 6px 0 #0B0B0B}
+.B .day b{background:#E9FF00;font-family:"Anton";font-size:44px;display:flex;align-items:center;padding:0 16px;border-right:3px solid #0B0B0B;line-height:1}
+.B .day div{padding:10px 14px}
+.B .day h4{margin:0;font-family:"Noto Sans TC";font-weight:900;font-size:17px}
+.B .day span{font-family:"Space Mono",monospace;font-size:10px}
+.B .row{display:grid;grid-template-columns:80px 1fr;gap:14px;margin-top:10px;border:2px solid #0B0B0B;background:#fff;padding:10px 12px}
+.B .row time{font-family:"Space Mono",monospace;font-weight:700;font-size:12px;background:#1B36FF;color:#fff;padding:2px 6px;height:fit-content}
+.B .row p{margin:0;font-size:13px}
+.B .row small{display:block;font-family:"Space Mono",monospace;font-size:10px;color:#555;margin-top:3px}
+.B .meal{margin-top:22px;border:3px solid #0B0B0B;background:#E9FF00;box-shadow:6px 6px 0 #0B0B0B;padding:14px 16px}
+.B .meal b{font-family:"Anton";font-size:20px;letter-spacing:.02em}
+.B .meal ul{margin:8px 0 0;padding:0;list-style:none;font-size:12.5px}
+.B .meal li{padding:4px 0;border-top:1.5px solid #0B0B0B}
+.B .meal li i{font-style:normal;font-family:"Space Mono",monospace;font-size:10px;float:right}
+
+/* ============ C · NIGHT TRANSIT ============ */
+.C{background:#0E0F12;color:#EDEFF2;padding:44px}
+.C .micro{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.26em;color:#FFB020}
+.C .hero{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;border-bottom:1px solid #2A2E36;padding-bottom:20px;margin-top:10px}
+.C h3{font-family:"Noto Sans TC";font-weight:300;font-size:50px;line-height:1.06;letter-spacing:.03em;margin:8px 0 0}
+.C h3 small{display:block;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.2em;color:#8A8F98;margin-top:12px}
+.C .cd{font-family:"Space Mono",monospace;font-size:11px;color:#8A8F98;text-align:right}
+.C .cd b{display:block;font-size:46px;color:#EDEFF2;font-weight:400;line-height:1}
+.C .line{display:flex;gap:0;margin-top:26px;border:1px solid #2A2E36}
+.C .line div{flex:1;padding:10px 12px;border-right:1px solid #2A2E36;font-family:"Space Mono",monospace;font-size:10px;color:#8A8F98}
+.C .line div:last-child{border-right:0}
+.C .line b{display:block;color:#EDEFF2;font-size:12px;margin-top:4px;font-weight:400}
+.C .day{display:flex;gap:16px;align-items:baseline;margin-top:30px;padding-bottom:10px;border-bottom:1px solid #2A2E36}
+.C .day b{font-family:"Space Mono",monospace;font-size:12px;color:#FFB020;letter-spacing:.1em}
+.C .day h4{margin:0;font-size:16px;font-weight:500}
+.C .day span{margin-left:auto;font-family:"Space Mono",monospace;font-size:10px;color:#8A8F98}
+.C .row{display:grid;grid-template-columns:78px 1fr;gap:18px;padding:14px 0 14px 0;position:relative}
+.C .row:before{content:"";position:absolute;left:70px;top:0;bottom:0;border-left:1px dotted #3A4048}
+.C .row time{font-family:"Space Mono",monospace;font-size:11px;color:#8A8F98}
+.C .row p{margin:0;font-size:13px;padding-left:16px;position:relative}
+.C .row p:before{content:"";position:absolute;left:-4px;top:7px;width:7px;height:7px;border:1px solid #FFB020;border-radius:50%;background:#0E0F12}
+.C .row small{display:block;color:#7E858E;font-size:11px;margin-top:2px}
+.C .meal{margin-top:24px;border:1px solid #2A2E36;padding:14px 16px;background:#14161B}
+.C .meal b{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.16em;color:#FFB020}
+.C .meal ul{margin:8px 0 0;padding:0;list-style:none;font-size:12.5px}
+.C .meal li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #23272E}
+.C .meal li i{font-style:normal;font-family:"Space Mono",monospace;font-size:10.5px;color:#8A8F98}
+
+/* ============ D · MAGAZINE ============ */
+.D{background:#FAF9F5;color:#111;padding:0}
+.D .mast{padding:22px 26px 10px;border-bottom:4px solid #111;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.D .brand{font-family:"Bebas Neue";font-size:54px;line-height:.85;letter-spacing:.02em}
+.D .brand span{font-family:"Noto Sans TC";font-size:11px;font-weight:500;letter-spacing:.3em;display:block;margin-top:8px}
+.D .issue{font-family:"Space Mono",monospace;font-size:10px;text-align:right;color:#666}
+.D .inner{padding:18px 26px 30px}
+.D .lead{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;border-bottom:1px solid #111;padding-bottom:18px}
+.D h3{font-family:"Noto Sans TC";font-weight:900;font-size:40px;line-height:1.1;letter-spacing:-.01em;margin:0}
+.D h3 em{font-family:"Noto Serif TC";font-style:normal;font-weight:600;color:#D8232A}
+.D .dek{font-size:12px;color:#555;margin:10px 0 0;columns:2;column-gap:16px}
+.D .side{border-left:1px solid #111;padding-left:16px}
+.D .side dl{margin:0;font-size:11px}
+.D .side dt{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.14em;color:#888;margin-top:8px}
+.D .side dd{margin:1px 0 0;font-family:"Space Mono",monospace}
+.D .day{margin-top:20px;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;border-top:3px solid #D8232A;border-bottom:1px solid #111;padding:8px 0}
+.D .day b{font-family:"Bebas Neue";font-size:38px;line-height:1;letter-spacing:.02em}
+.D .day h4{margin:0;font-size:15px;font-weight:700}
+.D .day h4 small{display:block;font-family:"Space Mono",monospace;font-size:9px;color:#888;font-weight:400;letter-spacing:.1em;margin-top:3px}
+.D .day span{font-family:"Space Mono",monospace;font-size:9px;border:1px solid #111;padding:2px 6px}
+.D .row{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:11px 0;border-bottom:1px dotted #bbb}
+.D .row time{font-family:"Space Mono",monospace;font-size:11px;font-weight:700}
+.D .row p{margin:0;font-size:12.5px}
+.D .row p:after{content:"";display:block;border-bottom:0}
+.D .row small{display:block;color:#777;font-size:10.5px;margin-top:2px}
+.D .meal{margin-top:18px;border:1px solid #111;padding:12px 14px;position:relative}
+.D .meal b{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.16em;background:#111;color:#fff;padding:2px 6px;position:absolute;top:-9px;left:10px}
+.D .meal ul{margin:6px 0 0;padding:0;list-style:none;font-size:12px}
+.D .meal li{display:flex;gap:8px;padding:4px 0;border-bottom:1px dotted #ccc}
+.D .meal li i{font-style:normal;font-family:"Space Mono",monospace;font-size:10px;color:#D8232A}
+
+@media (max-width:720px){
+  .A,.B,.C{padding:24px}
+  .A h3{font-size:34px}
+  .A .big{font-size:56px}
+  .A .facts{grid-template-columns:1fr}
+  .A .facts div{border-right:0;border-bottom:1px solid #eee}
+  .B h3{font-size:44px}
+  .C h3{font-size:32px}
+  .D .lead{grid-template-columns:1fr}
+  .D .side{border-left:0;border-top:1px solid #111;padding-left:0;padding-top:12px}
+  .D .dek{columns:1}
+  .D h3{font-size:30px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top">
+    <h1>關西 2027 · 四種視覺方向</h1>
+    <p>同一份內容（首屏／單日／時間軸／用餐）在四種設計語言下的樣子。不是換色而已，字體、格線、陰影、資訊密度都不一樣。<strong>看完回我一個字母，我就把整站套過去。</strong></p>
+    <div class="jump">
+      <a href="#a">A · SWISS GRID</a>
+      <a href="#b">B · 硬派海報</a>
+      <a href="#c">C · 夜間路線</a>
+      <a href="#d">D · 雜誌編集</a>
+    </div>
+  </div>
+
+  <!-- A -->
+  <section class="demo" id="a">
+    <div class="dhead">
+      <div class="tag">A</div>
+      <div>
+        <h2>SWISS GRID｜瑞士網格</h2>
+        <div class="refs">參考：Josef Müller-Brockmann《Grid Systems》、SBB 瑞士國鐵時刻表、Monocle 內頁</div>
+        <div class="why">關鍵是「克制到近乎冷淡」：只有黑、白、一個紅，所有東西貼在同一組垂直線上，數字用超細大字。最像設計工作室的作品集，也最不會被說 AI 感。代價是比較冷、親和力低。</div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="A">
+        <div class="micro">Kansai / Japan / 2027.02.02—02.06</div>
+        <div class="hero">
+          <h3>關西 2027<small>5 DAYS · 2 ADULTS + 1 CHILD · OSAKA BASE</small></h3>
+          <div class="big"><i>05</i></div>
+        </div>
+        <dl class="facts">
+          <div><dt>FLIGHT</dt><dd>IT210 / IT213</dd></div>
+          <div><dt>BASE</dt><dd>UMEDA, OSAKA</dd></div>
+          <div><dt>COUNTDOWN</dt><dd>72 DAYS</dd></div>
+        </dl>
+        <div class="day"><b>02</b><h4>USJ 或大阪購物日</h4><span>2027.02.03 / WED</span></div>
+        <div class="rows">
+          <div class="row"><time>08:00</time><p><b>JR 大阪 → Universal City</b><small>環狀線 → 西九条 → 夢咲線，12 分</small></p></div>
+          <div class="row"><time>08:20</time><p><b>園區排隊</b><small>開園前 40 分，先安檢再入場</small></p></div>
+        </div>
+        <div class="meal">
+          <div class="k">EAT / 梅田</div>
+          <ul>
+            <li><span>ザ ブラチナム ルクア大阪</span><i>¥2,198</i></li>
+            <li><span>一風堂 梅田店</span><i>¥1,000</i></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="note">風險：太冷會像公司年報；照片必須嚴格控制，不能有旅遊明信片感。</p>
+  </section>
+
+  <!-- B -->
+  <section class="demo" id="b">
+    <div class="dhead">
+      <div class="tag">B</div>
+      <div>
+        <h2>硬派海報｜Neo-Brutalist</h2>
+        <div class="refs">參考：Balenciaga 形象廣告、Bloomberg Businessweek 封面、MSCHF 視覺</div>
+        <div class="why">粗黑框、硬邊陰影、螢光黃與鈷藍，字體像貼紙一樣疊上去。最有個性、手機上最跳，適合「不想再看到溫柔 AI 網站」的人。代價是吵，長輩看會覺得不夠正式。</div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="B">
+        <span class="micro">KANSAI / 05 DAYS / 02.02—02.06</span>
+        <div class="hero">
+          <span class="sticker">2 ADULTS + 1 CHILD</span>
+          <h3>KANSAI<br><em>2027</em></h3>
+          <div class="sub"><span class="hot">IT210 / IT213</span><span>UMEDA BASE</span><span>72 DAYS TO GO</span></div>
+        </div>
+        <div class="day"><b>02</b><div><h4>USJ 或大阪購物日</h4><span>2027.02.03 WED</span></div></div>
+        <div class="row"><time>08:00</time><p><b>JR 大阪 → Universal City</b><small>環狀線 → 西九条 → 夢咲線 / 12 分 / ¥200</small></p></div>
+        <div class="row"><time>08:20</time><p><b>園區排隊</b><small>開園前 40 分，先安檢再入場</small></p></div>
+        <div class="meal"><b>EAT / 梅田</b>
+          <ul><li>ザ ブラチナム ルクア大阪 <i>¥2,198</i></li><li>一風堂 梅田店 <i>¥1,000</i></li></ul>
+        </div>
+      </div>
+    </div>
+    <p class="note">風險：資訊密度一高就會亂；只適合短行程，天數多要另外收斂。</p>
+  </section>
+
+  <!-- C -->
+  <section class="demo" id="c">
+    <div class="dhead">
+      <div class="tag">C</div>
+      <div>
+        <h2>夜間路線｜Night Transit</h2>
+        <div class="refs">參考：JR 東日本夜間標識、機場 FIDS 航班板、Monocle 深色封面</div>
+        <div class="why">深底、琥珀色、等寬字，像深夜抵達機場時看的資訊板。質感最好、照片在深底上很突出，晚上在手機上也不刺眼。代價是列印要多一套反白規則。</div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="C">
+        <div class="micro">KANSAI INTERNATIONAL / ARRIVALS</div>
+        <div class="hero">
+          <h3>關西 2027<small>5 DAYS · 2 ADULTS + 1 CHILD</small></h3>
+          <div class="cd">DAYS TO GO<b>72</b></div>
+        </div>
+        <div class="line">
+          <div>FLIGHT<b>IT210 / IT213</b></div>
+          <div>BASE<b>UMEDA</b></div>
+          <div>HOTEL<b>RESPIRE OSAKA</b></div>
+        </div>
+        <div class="day"><b>DAY 02</b><h4>USJ 或大阪購物日</h4><span>02.03 WED</span></div>
+        <div class="row"><time>08:00</time><p><b>JR 大阪 → Universal City</b><small>環狀線 → 西九条 → 夢咲線 / 12 分</small></p></div>
+        <div class="row"><time>08:20</time><p><b>園區排隊</b><small>開園前 40 分，先安檢再入場</small></p></div>
+        <div class="meal"><b>EAT / 梅田</b>
+          <ul><li><span>ザ ブラチナム ルクア大阪</span><i>¥2,198</i></li><li><span>一風堂 梅田店</span><i>¥1,000</i></li></ul>
+        </div>
+      </div>
+    </div>
+    <p class="note">風險：白天戶外看手機對比要留意；列印需另寫淺色版。</p>
+  </section>
+
+  <!-- D -->
+  <section class="demo" id="d">
+    <div class="dhead">
+      <div class="tag">D</div>
+      <div>
+        <h2>雜誌編集｜Magazine</h2>
+        <div class="refs">參考：POPEYE、&amp;Premium、JTB《時刻表》復刻版</div>
+        <div class="why">報紙感的多欄格線、襯線點綴、編號索引，像一本关西特輯別冊。資訊密度最高、紙本最好看，也最有「人做的」痕跡。代價是手機上要簡化欄數。</div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="D">
+        <div class="mast">
+          <div class="brand">KANSAI<span>関西 二〇二七 ・家族旅行</span></div>
+          <div class="issue">VOL.05<br>2027.02.02—02.06</div>
+        </div>
+        <div class="inner">
+          <div class="lead">
+            <div>
+              <h3>五天四夜，<em>慢慢走</em>。</h3>
+              <p class="dek">大阪梅田為基地，一天京都、一天神戶、一天宇治。二大一小，移動半徑不超過一小時。</p>
+            </div>
+            <div class="side">
+              <dl>
+                <dt>FLIGHT</dt><dd>IT210 / IT213</dd>
+                <dt>BASE</dt><dd>UMEDA</dd>
+                <dt>PARTY</dt><dd>2 + 1</dd>
+              </dl>
+            </div>
+          </div>
+          <div class="day"><b>02</b><h4>USJ 或大阪購物日<small>DAY 02 / 2027.02.03 WED</small></h4><span>PLAN A</span></div>
+          <div class="row"><time>08:00</time><p><b>JR 大阪 → Universal City</b><small>環狀線 → 西九条 → 夢咲線，12 分，¥200</small></p></div>
+          <div class="row"><time>08:20</time><p><b>園區排隊</b><small>開園前 40 分，先安檢再入場</small></p></div>
+          <div class="meal"><b>EAT-02 梅田</b>
+            <ul><li><i>01</i>ザ ブラチナム ルクア大阪　¥2,198 起</li><li><i>02</i>一風堂 梅田店　¥1,000–1,500</li></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note">風險：小字多，戶外單手查會吃力；需要一個「大字模式」。</p>
+  </section>
+
+  <div class="foot">
+    <h3>怎麼選</h3>
+    <ul>
+      <li><strong>A</strong>：想要「設計師做的、安靜高級」，不介意冷。</li>
+      <li><strong>B</strong>：想要「一眼記住、有脾氣」，接受吵。</li>
+      <li><strong>C</strong>：想要「質感最好、晚上看舒服」，主要是自己手機看。</li>
+      <li><strong>D</strong>：想要「像一本旅行特輯」，會印出來或給長輩看。</li>
+    </ul>
+    <p>也可以混：例如 <strong>A 的骨架 + D 的圖片處理</strong>，或 <strong>C 的配色 + A 的排版</strong>。回我代號或組合即可。</p>
+  </div>
+</div>
+</body>
+</html>
