@@ -583,7 +583,7 @@ footer h4{font-family:var(--display);color:#fff;margin:0 0 10px;font-size:14px;f
 :root{
   --bg:#F6F4EE; --panel:#FCFBF7; --ink:#3A3833; --ink-2:#5E5A51; --muted:#7E786C;
   --rule:#DFDACF; --rule-dark:#4A4740; --accent:#7C6A52;
-  --d1:#A9715C; --d2:#B08C5B; --d3:#6E7F86; --d4:#8B8091; --d5:#6F7A5F;
+  --d1:#A9715C; --d2:#B08C5B; --d3:#7A878B; --d4:#8E8492; --d5:#747C68;
 }
 body{background:var(--bg);color:var(--ink);letter-spacing:.01em}
 .hero{background:var(--panel);border-bottom:1px solid var(--rule)}
