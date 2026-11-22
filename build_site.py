@@ -416,7 +416,7 @@ section{padding:88px 0;scroll-margin-top:72px}
 .card{background:var(--paper-2);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
 .card__img{height:200px;background-size:cover;background-position:center}
 .card__body{padding:22px 24px}
-.card h3{font-family:var(--serif);margin:0 0 10px;font-size:20px}
+.card h3{font-family:var(--serif);margin:0 0 10px;font-size:20px;text-wrap:balance;overflow-wrap:anywhere}
 .kv{display:flex;gap:10px;font-size:13.5px;color:var(--ink-soft);padding:6px 0;border-bottom:1px dashed var(--line)}
 .kv:last-child{border:0}
 .kv b{min-width:64px;color:var(--muted);font-weight:500}
@@ -427,7 +427,7 @@ section{padding:88px 0;scroll-margin-top:72px}
 .day__head{display:grid;grid-template-columns:120px 1fr;gap:28px;align-items:start;margin-bottom:28px}
 .day__no{font-family:var(--serif);font-size:76px;line-height:.9;color:var(--vermilion);font-weight:900}
 .day__no small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.24em;color:var(--muted);margin-top:10px}
-.day__title h2{font-family:var(--serif);font-size:clamp(22px,2.8vw,32px);margin:0 0 8px;font-weight:700;line-height:1.35}
+.day__title h2{text-wrap:balance;font-family:var(--serif);font-size:clamp(22px,2.8vw,32px);margin:0 0 8px;font-weight:700;line-height:1.35}
 .day__title .date{font-size:13px;color:var(--muted);letter-spacing:.08em}
 .gallery{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;margin:26px 0 34px}
 .gallery figure{margin:0;position:relative;overflow:hidden;border-radius:12px;aspect-ratio:4/3;background:#ddd}
