@@ -1141,7 +1141,7 @@ html[data-theme="light"]{
     </div>
     <div class="route"><div class="route__in">
       <a href="#day-1" style="--c:#D91E2A"><div class="dot" style="--c:#D91E2A"></div><div class="code">D1 · 02.02</div><div class="nm">抵達 · 臨空城 · 梅田</div></a>
-      <a href="#day-2" style="--c:#E85D04"><div class="dot" style="--c:#E85D04"></div><div class="code">D2 · 02.03</div><div class="nm">大阪 · USJ 或市區</div></a>
+      <a href="#day-2" style="--c:#E85D04"><div class="dot" style="--c:#E85D04"></div><div class="code">D2 · 02.03</div><div class="nm">大阪 · 市區逛街</div></a>
       <a href="#day-3" style="--c:#0072BC"><div class="dot" style="--c:#0072BC"></div><div class="code">D3 · 02.04</div><div class="nm">京都 · 宇治</div></a>
       <a href="#day-4" style="--c:#6F2C91"><div class="dot" style="--c:#6F2C91"></div><div class="code">D4 · 02.05</div><div class="nm">神戶 · 光之祭典</div></a>
       <a href="#day-5" style="--c:#00875A"><div class="dot" style="--c:#00875A"></div><div class="code">D5 · 02.06</div><div class="nm">梅田採買 · 返程</div></a>
