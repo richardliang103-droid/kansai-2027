@@ -14,13 +14,29 @@ import pathlib
 import re
 import sys
 import time
+from collections import Counter
 from html import escape
 
 ROOT = pathlib.Path(__file__).resolve().parent
-NOTE = pathlib.Path(
+REFS_ROOT = ROOT.parent.parent / "refs"
+DEFAULT_NOTE = pathlib.Path(
     "/Users/richard/Library/CloudStorage/SynologyDrive-HermesAgent/Obsidian/Travel/2027關西_5天4夜_完整版.md"
 )
+DEFAULT_FOOD_NOTE = pathlib.Path(
+    "/Users/richard/Library/CloudStorage/SynologyDrive-HermesAgent/Obsidian/Travel/20261117_關西美食候選清單.md"
+)
+NOTE = DEFAULT_NOTE
+FOOD_NOTE = DEFAULT_FOOD_NOTE
 SITE_META = ROOT / "site_meta.json"
+
+FOOD_REGIONS = ["大阪", "京都", "宇治", "神戶"]
+FOOD_REGION_COLORS = {
+    "大阪": "#E85D04",
+    "京都": "#0072BC",
+    "宇治": "#0E7C6B",
+    "神戶": "#6F2C91",
+}
+FOOD_NOTE_MAX_LEN = 80
 
 LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^)]+)\)")
 
@@ -306,11 +322,110 @@ def parse_summary(body: str) -> list[str]:
     return out
 
 
+# ---------------------------------------------------------------- food parsing
+def _resolve_food_note(path: pathlib.Path | None = None) -> pathlib.Path:
+    if path is not None:
+        return path
+    local_ref = REFS_ROOT / "data" / DEFAULT_FOOD_NOTE.name
+    if FOOD_NOTE == DEFAULT_FOOD_NOTE and local_ref.is_file():
+        return local_ref
+    return FOOD_NOTE
+
+
+def parse_food(path: pathlib.Path | None = None) -> list[dict]:
+    """Parse 7-column Markdown tables under H2 headings in the food note.
+
+    Returns [] if the file does not exist or yields 0 valid rows so builds never fail.
+    """
+    target = _resolve_food_note(path)
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError:
+        return []
+
+    items: list[dict] = []
+    current_region: str | None = None
+    in_table = False
+    header_seen = False
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        h2 = re.match(r"^##\s+(.+)$", stripped)
+        if h2:
+            current_region = h2.group(1).strip()
+            in_table = False
+            header_seen = False
+            continue
+        if not current_region:
+            continue
+        if not stripped.startswith("|"):
+            in_table = False
+            header_seen = False
+            continue
+
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
+            continue
+        if not in_table:
+            in_table = True
+            header_seen = True
+            continue
+        if not header_seen or len(cells) != 7:
+            continue
+
+        raw_name, area, category, signature, price, note, raw_source = cells
+        if "／" in raw_name:
+            name_zh, name_ja = (p.strip() for p in raw_name.split("／", 1))
+        else:
+            name_zh, name_ja = raw_name.strip(), ""
+
+        sources = [
+            {"label": m.group(1).strip(), "url": m.group(2).strip()}
+            for m in LINK_RE.finditer(raw_source)
+        ]
+        primary_source = (
+            sources[0]
+            if sources
+            else {"label": strip_md_links(raw_source).strip(), "url": ""}
+        )
+        items.append({
+            "region": current_region,
+            "name_zh": name_zh,
+            "name_ja": name_ja,
+            "area": area,
+            "category": category,
+            "signature": signature,
+            "price": price,
+            "note": note,
+            "source_label": primary_source["label"],
+            "source_url": primary_source["url"],
+            "sources": sources,
+        })
+    return items
+
+
+def _load_snapshot_data(snapshot_html: pathlib.Path, meta: dict) -> dict:
+    raw_html = snapshot_html.read_text(encoding="utf-8")
+    m = re.search(r"^const DATA = (\{.*\});$", raw_html, re.M)
+    if not m:
+        raise RuntimeError(f"Could not extract embedded DATA from {snapshot_html}")
+    base = json.loads(m.group(1).replace("<\\/", "</"))
+    base["meta"] = meta
+    base["built_at"] = time.strftime("%Y-%m-%d %H:%M")
+    return base
+
+
 # ---------------------------------------------------------------- build
-def build_data() -> dict:
+def build_data(food_note: pathlib.Path | None = None) -> dict:
+    meta = json.loads(SITE_META.read_text(encoding="utf-8"))
+    snapshot_html = REFS_ROOT / "site" / "index.html"
+    if NOTE == DEFAULT_NOTE and snapshot_html.is_file():
+        data = _load_snapshot_data(snapshot_html, meta)
+        data["food"] = parse_food(food_note)
+        return data
+
     text = NOTE.read_text(encoding="utf-8")
     fm, body = parse_frontmatter(text)
-    meta = json.loads(SITE_META.read_text(encoding="utf-8"))
     credits = json.loads((ROOT / "assets/img/credits.json").read_text(encoding="utf-8"))
     hotel = parse_hotel(body)
     hide = (meta.get("privacy") or {}).get("hide_hotel_rows") or []
@@ -331,6 +446,7 @@ def build_data() -> dict:
         "checklist": parse_checklist(body),
         "open": parse_open(body),
         "glossary": parse_glossary(body),
+        "food": parse_food(food_note),
         "credits": credits,
         "built_at": time.strftime("%Y-%m-%d %H:%M"),
         "note": NOTE.name,
@@ -413,8 +529,8 @@ a{color:inherit}
 
 /* route strip */
 .route{border-top:2px solid var(--ink);margin-top:44px;background:var(--panel)}
-.route__in{display:grid;grid-template-columns:repeat(5,1fr);position:relative}
-.route__in:before{content:"";position:absolute;left:10%;right:10%;top:36px;height:4px;background:linear-gradient(90deg,var(--d1) 0 25%,var(--d2) 25% 50%,var(--d3) 50% 75%,var(--d4) 75% 100%)}
+.route__in{display:grid;grid-template-columns:repeat(6,1fr);position:relative}
+.route__in:before{content:"";position:absolute;left:8.3%;right:8.3%;top:36px;height:4px;background:linear-gradient(90deg,var(--d1) 0 25%,var(--d2) 25% 50%,var(--d3) 50% 75%,var(--d4) 75% 100%)}
 .route a{position:relative;text-decoration:none;padding:29px 14px 14px;border-right:1px solid var(--rule);display:block}
 .route a:last-child{border-right:0}
 .route .dot{width:14px;height:14px;border-radius:50%;background:var(--panel);border:4px solid var(--c,var(--ink));position:relative;margin:0 0 12px;z-index:1}
@@ -1083,9 +1199,58 @@ html[data-theme="light"]{
   html{scroll-behavior:auto}
   *{transition:none!important;animation:none!important}
 }
+/* food */
+.food-bar{position:sticky;top:56px;z-index:30;background:rgba(1,1,2,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);padding:14px 0 16px;margin:-10px 0 24px;display:flex;flex-direction:column;gap:10px}
+[data-theme="light"] .food-bar{background:rgba(255,255,255,.94)}
+.food-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.food-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.food-chip{appearance:none;border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);border-radius:999px;font-family:var(--sans);font-size:12.5px;font-weight:500;line-height:1.2;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.food-chip:hover{border-color:var(--rule-dark);color:var(--ink)}
+.food-chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.food-chip[data-region].on:not([data-region="全部"]){background:var(--rc);color:#fff;border-color:var(--rc)}
+.food-chip__dot{width:7px;height:7px;border-radius:50%;background:var(--rc);flex-shrink:0}
+.food-chip.on .food-chip__dot{background:#fff}
+.food-search{background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;font-family:var(--sans);font-size:13px;min-width:190px;flex:1 1 210px;max-width:300px}
+.food-search::placeholder{color:var(--muted)}
+.food-search:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.food-count{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.food-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.food-card{background:var(--panel);border:1px solid var(--rule);border-top:3px solid var(--rc,var(--accent));border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
+[data-theme="light"] .food-card{background:#FAFAFB}
+.food-card:hover,.food-card:focus-visible{border-color:var(--rule-dark);border-top-color:var(--rc,var(--accent))}
+.food-card[hidden],.food-empty[hidden]{display:none !important}
+.food-card__head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.food-names{min-width:0;flex:1}
+.food-zh{font-weight:700;font-size:15px;line-height:1.35;color:var(--ink);word-break:break-word}
+.food-ja{font-size:12px;line-height:1.4;color:var(--muted);margin-top:2px;word-break:break-word}
+.food-tag{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;line-height:1.3;padding:3px 8px;border-radius:999px;border:1px solid var(--rule);color:var(--ink-2);max-width:48%}
+.food-tag__dot{width:7px;height:7px;border-radius:50%;background:var(--rc,var(--accent));flex-shrink:0}
+.food-tag__txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.food-cat{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+.food-sig{font-size:13.5px;line-height:1.5;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.food-note{font-size:12.5px;line-height:1.55;color:var(--ink-2)}
+.food-note--trunc{cursor:help}
+.food-note__full{display:none}
+.food-foot{margin-top:auto;padding-top:10px;border-top:1px solid var(--rule);display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.food-price{font-family:var(--mono);font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
+.food-links{display:inline-flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.food-links a{font-family:var(--mono);font-size:11.5px;color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+.food-links a:hover{border-bottom-color:currentColor}
+.food-empty,.food-unsynced{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:36px 24px;text-align:center;color:var(--muted);font-size:14px}
+@media (max-width:960px){
+  .food-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:600px){
+  .food-bar{top:56px;padding:10px 0 12px;gap:8px}
+  .food-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;width:100%;padding-bottom:2px}
+  .food-chips::-webkit-scrollbar{display:none}
+  .food-search{max-width:none;min-width:0;flex:1 1 auto}
+  .food-grid{grid-template-columns:1fr}
+}
+
 @media print{
   body{background:#fff;font-size:10pt}
-  .nav,.hero__bar .right,.plans,.skip-link{display:none}
+  .nav,.hero__bar .right,.plans,.skip-link,.food-bar{display:none !important}
   .hero{background:#fff;border-bottom:2px solid #000}
   .hero__stage{background:#fff;padding:20px 0}
   .hero__grid{grid-template-columns:1.4fr 1fr}
@@ -1095,7 +1260,14 @@ html[data-theme="light"]{
   .day{background:#fff;border-top:1px solid #000;break-before:page;padding:14px 0}
   .day:first-of-type{break-before:auto}
   .gallery{display:none}
-  .tl,.meal,.transfer,.check,.card,.tix .t{break-inside:avoid}
+  .tl,.meal,.transfer,.check,.card,.tix .t,.food-card{break-inside:avoid}
+  .food-grid{grid-template-columns:1fr !important;gap:8px !important}
+  .food-card{background:#fff !important;border:1px solid #ccc !important;border-top:3px solid var(--rc,#000) !important;color:#000 !important}
+  .food-zh,.food-sig,.food-price{color:#000 !important}
+  .food-ja,.food-cat,.food-note,.food-tag{color:#333 !important}
+  .food-sig{display:block !important;-webkit-line-clamp:unset !important;overflow:visible !important}
+  .food-note__short{display:none !important}
+  .food-note__full{display:inline !important}
   details.notes{display:block}
   details.notes[open] summary{display:none}
   a{color:#000;text-decoration:none}
@@ -1145,6 +1317,7 @@ html[data-theme="light"]{
       <a href="#day-3" style="--c:#0072BC"><div class="dot" style="--c:#0072BC"></div><div class="code">D3 · 02.04</div><div class="nm">京都 · 宇治</div></a>
       <a href="#day-4" style="--c:#6F2C91"><div class="dot" style="--c:#6F2C91"></div><div class="code">D4 · 02.05</div><div class="nm">神戶 · 光之祭典</div></a>
       <a href="#day-5" style="--c:#00875A"><div class="dot" style="--c:#00875A"></div><div class="code">D5 · 02.06</div><div class="nm">梅田採買 · 返程</div></a>
+      <a href="#food" style="--c:#E85D04"><div class="dot" style="--c:#E85D04"></div><div class="code">FOOD</div><div class="nm">美食 · __FOOD_COUNT__</div></a>
     </div></div>
   </div></div>
 </header>
@@ -1193,6 +1366,8 @@ html[data-theme="light"]{
   <div class="open" id="open-body"></div>
 </div></section>
 
+__FOOD_SECTION__
+
 <section id="glossary"><div class="wrap">
   <div class="sec-head"><span class="no">WORDS</span><h2>常用日語對照</h2><span class="sub">站名與地名</span></div>
   <div class="gloss" id="gloss-body"></div>
@@ -1224,7 +1399,7 @@ $("#cd").textContent = days > 0 ? days : (days===0 ? "TODAY" : "—");
 /* nav */
 const nav = $("#nav");
 nav.appendChild(el("span","brand","KANSAI 2027"));
-const navItems = [["overview","總覽"],["transport","交通"],["tickets","門票"],["checklist","清單"],["glossary","日語"]];
+const navItems = [["overview","總覽"],["transport","交通"],["tickets","門票"],["checklist","清單"],["food","美食"],["glossary","日語"]];
 DATA.days.forEach(d=>navItems.splice(1+ (d.no-1),0,[`day-${d.no}`,`Day ${d.no}`]));
 navItems.forEach(([id,label])=>{ const a=el("a",null,label); a.href="#"+id; nav.appendChild(a); });
 const tbtn=el("button","theme-toggle");
@@ -1410,6 +1585,62 @@ const tb2=$("#transfer-body");
 const pb=$("#practices-body");
 (DATA.practices||[]).forEach((t,i)=>{ const d=el("div"); d.innerHTML=`<span class="n">${i+1}</span><span>${esc(t)}</span>`; pb.appendChild(d); });
 
+/* food filter & search (pure client-side, zero network requests) */
+(function initFood(){
+  const root = $("#food");
+  if(!root) return;
+  const cards = [...root.querySelectorAll(".food-card")];
+  const countEl = $("#food-count");
+  const emptyEl = $("#food-empty");
+  const searchEl = $("#food-search");
+  const regionBtns = [...root.querySelectorAll(".food-chip[data-region]")];
+  const catBtns = [...root.querySelectorAll(".food-chip[data-cat]")];
+  if(!cards.length) return;
+  const total = cards.length;
+  let activeRegion = "全部";
+  let activeCat = "全部類型";
+  let query = "";
+
+  function apply(){
+    const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    let shown = 0;
+    for(const card of cards){
+      const okRegion = activeRegion === "全部" || card.dataset.region === activeRegion;
+      const okCat = activeCat === "全部類型" || card.dataset.cat === activeCat;
+      let okQuery = true;
+      if(tokens.length){
+        const hay = card.dataset.q || "";
+        for(const tk of tokens){ if(!hay.includes(tk)){ okQuery = false; break; } }
+      }
+      const vis = okRegion && okCat && okQuery;
+      card.hidden = !vis;
+      if(vis) shown++;
+    }
+    if(countEl) countEl.textContent = `顯示 ${shown} / ${total}`;
+    if(emptyEl) emptyEl.hidden = shown > 0;
+  }
+
+  regionBtns.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      activeRegion = btn.dataset.region;
+      regionBtns.forEach(b=>{ const on=b===btn; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); });
+      apply();
+    });
+  });
+  catBtns.forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      activeCat = btn.dataset.cat;
+      catBtns.forEach(b=>{ const on=b===btn; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); });
+      apply();
+    });
+  });
+  if(searchEl){
+    searchEl.addEventListener("input", ()=>{ query = searchEl.value; apply(); });
+    searchEl.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && searchEl.value){ searchEl.value=""; query=""; apply(); } });
+  }
+  apply();
+})();
+
 /* glossary */
 const gb=$("#gloss-body");
 DATA.glossary.forEach(([jp,zh])=>{ const d=el("div"); d.innerHTML=`<span class="jp">${esc(jp)}</span><span class="zh">${esc(zh)}</span>`; gb.appendChild(d); });
@@ -1425,15 +1656,141 @@ Object.entries(DATA.credits).filter(([slug])=>used.has(slug)).forEach(([slug,c])
 """
 
 
+def _safe_http_url(url: str) -> str:
+    return url if re.match(r"^https?://", url or "", re.I) else "#"
+
+
+def _inline_bold(text: str) -> str:
+    return re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escape(text))
+
+
+def render_food_section(food: list[dict]) -> str:
+    total = len(food)
+    if total == 0:
+        return (
+            '<section id="food"><div class="wrap">\n'
+            '  <div class="sec-head"><span class="no">FOOD</span><h2>美食候選</h2><span class="sub">0 家</span></div>\n'
+            '  <div class="food-unsynced">美食清單尚未同步</div>\n'
+            '</div></section>'
+        )
+
+    top_cats = [cat for cat, _ in Counter(it["category"] for it in food if it["category"]).most_common(8)]
+
+    region_chips = [
+        '<button type="button" class="food-chip on" data-region="全部" aria-pressed="true">全部</button>'
+    ]
+    for reg in FOOD_REGIONS:
+        color = FOOD_REGION_COLORS.get(reg, "var(--accent)")
+        region_chips.append(
+            f'<button type="button" class="food-chip" data-region="{escape(reg, quote=True)}" '
+            f'style="--rc:{color}" aria-pressed="false">'
+            f'<span class="food-chip__dot" aria-hidden="true"></span>{escape(reg)}</button>'
+        )
+
+    cat_chips = [
+        '<button type="button" class="food-chip on" data-cat="全部類型" aria-pressed="true">全部類型</button>'
+    ]
+    for cat in top_cats:
+        cat_chips.append(
+            f'<button type="button" class="food-chip" data-cat="{escape(cat, quote=True)}" '
+            f'aria-pressed="false">{escape(cat)}</button>'
+        )
+
+    cards_html: list[str] = []
+    for it in food:
+        reg = it["region"]
+        color = FOOD_REGION_COLORS.get(reg, "var(--accent)")
+        area = it["area"]
+        tag_text = f"{reg} · {area}" if area and area != "—" else reg
+        note = it["note"]
+        is_long_note = len(note) > FOOD_NOTE_MAX_LEN
+        if is_long_note:
+            short_note = note[:FOOD_NOTE_MAX_LEN] + "…"
+            note_html = (
+                f'<div class="food-note food-note--trunc" title="{escape(note, quote=True)}">'
+                f'<span class="food-note__short">{_inline_bold(short_note)}</span>'
+                f'<span class="food-note__full">{_inline_bold(note)}</span>'
+                f'</div>'
+            )
+            card_title_attr = f' title="{escape(note, quote=True)}"'
+        else:
+            note_html = f'<div class="food-note">{_inline_bold(note)}</div>' if note else ""
+            card_title_attr = ""
+
+        ja_html = f'<div class="food-ja">{escape(it["name_ja"])}</div>' if it["name_ja"] else ""
+        sig = it["signature"]
+        sig_title = f' title="{escape(sig, quote=True)}"' if len(sig) > 36 else ""
+
+        sources = it.get("sources") or []
+        if sources:
+            links_html = "".join(
+                f'<a href="{escape(_safe_http_url(s["url"]), quote=True)}" target="_blank" rel="noopener">{escape(s["label"])}</a>'
+                for s in sources
+            )
+        elif it.get("source_label"):
+            links_html = f'<span>{escape(it["source_label"])}</span>'
+        else:
+            links_html = ""
+
+        haystack = " ".join(
+            part for part in (it["name_zh"], it["name_ja"], sig, note) if part
+        ).lower()
+
+        cards_html.append(
+            f'<article class="food-card" tabindex="0" style="--rc:{color}" '
+            f'data-region="{escape(reg, quote=True)}" '
+            f'data-cat="{escape(it["category"], quote=True)}" '
+            f'data-q="{escape(haystack, quote=True)}"{card_title_attr}>'
+            f'<div class="food-card__head">'
+            f'<div class="food-names"><div class="food-zh">{escape(it["name_zh"])}</div>{ja_html}</div>'
+            f'<span class="food-tag" title="{escape(tag_text, quote=True)}">'
+            f'<span class="food-tag__dot" aria-hidden="true"></span>'
+            f'<span class="food-tag__txt">{escape(tag_text)}</span></span>'
+            f'</div>'
+            f'<div class="food-cat">{escape(it["category"])}</div>'
+            f'<div class="food-sig"{sig_title}>{escape(sig)}</div>'
+            f'{note_html}'
+            f'<div class="food-foot">'
+            f'<span class="food-price">{escape(it["price"])}</span>'
+            f'<span class="food-links">{links_html}</span>'
+            f'</div>'
+            f'</article>'
+        )
+
+    return (
+        '<section id="food"><div class="wrap">\n'
+        f'  <div class="sec-head"><span class="no">FOOD</span><h2>美食候選</h2>'
+        f'<span class="sub">{total} 家・依區域與類型篩選</span></div>\n'
+        '  <div class="food-bar" role="region" aria-label="美食篩選">\n'
+        '    <div class="food-row">\n'
+        f'      <div class="food-chips" role="group" aria-label="依區域篩選">{"".join(region_chips)}</div>\n'
+        '      <input type="search" id="food-search" class="food-search" placeholder="搜尋店名或招牌" aria-label="搜尋店名或招牌" autocomplete="off">\n'
+        f'      <div class="food-count" id="food-count" aria-live="polite">顯示 {total} / {total}</div>\n'
+        '    </div>\n'
+        f'    <div class="food-chips" role="group" aria-label="依類型篩選">{"".join(cat_chips)}</div>\n'
+        '  </div>\n'
+        f'  <div class="food-grid" id="food-grid">\n    ' + "\n    ".join(cards_html) + "\n  </div>\n"
+        '  <div class="food-empty" id="food-empty" hidden>沒有符合的店，試試其他關鍵字</div>\n'
+        '</div></section>'
+    )
+
+
 def render(data: dict) -> str:
     html = HTML
+    food = data.get("food") or []
+    food_section = render_food_section(food)
+    replacements = (data["meta"].get("privacy") or {}).get("replacements") or {}
+    for src, dst in replacements.items():
+        food_section = food_section.replace(src, dst)
     html = html.replace("__TITLE__", "2027 關西 5 天 4 夜｜家庭行程")
     html = html.replace("__NOTE__", escape(data["note"]))
     html = html.replace("__BUILT__", escape(data["built_at"]))
     html = html.replace("__SITE_URL__", data["meta"].get("site_url", ""))
+    html = html.replace("__FOOD_COUNT__", str(len(food)))
+    html = html.replace("__FOOD_SECTION__", food_section)
     public_meta = {k: v for k, v in data["meta"].items() if k not in ("privacy", "site_url")}
     payload = json.dumps({**data, "meta": public_meta}, ensure_ascii=False, separators=(",", ":"))
-    for src, dst in ((data["meta"].get("privacy") or {}).get("replacements") or {}).items():
+    for src, dst in replacements.items():
         payload = payload.replace(src, dst)
     payload = payload.replace("</", "<\\/")
     return html.replace("__DATA__", payload)
@@ -1446,7 +1803,11 @@ def build() -> None:
     (ROOT / "index.html").write_text(render(data), encoding="utf-8")
     days = len(data["days"])
     stops = sum(len(p["rows"]) for d in data["days"] for p in d["plans"])
-    print(f"built index.html · {days} days · {stops} timeline rows · {len(data['checklist'])} checklist items")
+    food_cnt = len(data.get("food") or [])
+    print(
+        f"built index.html · {days} days · {stops} timeline rows · "
+        f"{len(data['checklist'])} checklist items · {food_cnt} food items"
+    )
 
 
 if __name__ == "__main__":
