@@ -337,6 +337,36 @@ def _resolve_food_note(path: pathlib.Path | None = None) -> pathlib.Path:
     return FOOD_NOTE
 
 
+CAT_GROUPS = [
+    ("壽喜燒", ["壽喜燒"]),
+    ("涮涮鍋", ["涮涮鍋"]),
+    ("神戶牛", ["神戶牛"]),
+    ("燒肉", ["燒肉", "內臟"]),
+    ("壽司", ["壽司"]),
+    ("拉麵", ["拉麵"]),
+    ("烏龍麵", ["烏龍"]),
+    ("大阪燒", ["大阪燒", "蔥燒"]),
+    ("章魚燒", ["章魚燒", "明石燒"]),
+    ("麵類", ["蕎麥", "麵類"]),
+    ("炸物", ["串炸", "天婦羅", "豬排", "炸"]),
+    ("中華", ["中華", "餃子", "肉包", "河豚"]),
+    ("洋食", ["洋食", "漢堡", "咖哩", "牛排", "鐵板"]),
+    ("和食", ["鰻魚", "京料理", "定食", "食堂", "海鮮", "蔬食", "湯豆腐", "螃蟹", "丼"]),
+    ("居酒屋", ["居酒屋", "串燒"]),
+    ("甜點", ["甜點", "布丁", "抹茶", "和菓子", "麵包", "鬆餅", "巧克力", "茶房", "茶蕎麥"]),
+    ("咖啡", ["咖啡", "喫茶"]),
+    ("小吃", ["小吃", "B 級", "關東煮"]),
+]
+
+
+def cat_group(cat: str) -> str:
+    """把店家自己的類型字串收斂成固定的篩選分組（順序即優先序）。"""
+    for group, keys in CAT_GROUPS:
+        if any(k in cat for k in keys):
+            return group
+    return "其他"
+
+
 def parse_food(path: pathlib.Path | None = None) -> list[dict]:
     """Parse 7-column Markdown tables under H2 headings in the food note.
 
@@ -399,6 +429,7 @@ def parse_food(path: pathlib.Path | None = None) -> list[dict]:
             "name_ja": name_ja,
             "area": area,
             "category": category,
+            "cat_group": cat_group(category),
             "signature": signature,
             "price": price,
             "note": note,
@@ -647,6 +678,8 @@ details.notes li{margin-bottom:6px}
 .meal a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(0,91,172,.35);margin-left:6px;font-family:var(--mono);font-size:10.5px}
 .meal .pick{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;background:var(--c,var(--accent));color:#fff;padding:1px 5px;margin-left:6px;vertical-align:1px}
 .mtypes{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+button.mtag{appearance:none;cursor:pointer;font-family:var(--mono)}
+button.mtag:hover{border-color:var(--ink);color:var(--ink)}
 .mtag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;line-height:1;padding:3px 6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink-2);white-space:nowrap}
 .meal .dt .mtag{margin-right:6px;vertical-align:1px;background:transparent}
 .mtag[data-t*="壽喜"],.mtag[data-t*="涮涮"]{border-color:#B4552E;color:#B4552E}
@@ -1545,8 +1578,8 @@ DATA.days.forEach(d=>{
       const box = el("div","meal");
       const types = [...new Set(m.items.map(i=>i.type).filter(Boolean))];
       box.innerHTML = `<div class="slot">${esc(m.slot)}</div><div class="area">${esc(m.area)}</div>
-        ${types.length?`<div class="mtypes">${types.map(t=>`<span class="mtag" data-t="${esc(t)}">${esc(t)}</span>`).join("")}</div>`:""}
-        <ol>${m.items.map((it,i)=>`<li><div><div class="nm">${esc(it.name)}${i===0?'<span class="pick">首選</span>':""}</div><div class="dt">${it.type?`<span class="mtag" data-t="${esc(it.type)}">${esc(it.type)}</span>`:""}${esc(it.detail)}</div>${it.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}<a class="maps" href="${maps(it.name)}" target="_blank" rel="noopener">地圖</a></div></li>`).join("")}</ol>
+        ${types.length?`<div class="mtypes">${types.map(t=>`<button type="button" class="mtag" data-t="${esc(t)}" data-goto="${esc(t)}" title="在美食頁篩選「${esc(t)}」">${esc(t)}</button>`).join("")}</div>`:""}
+        <ol>${m.items.map((it,i)=>`<li><div><div class="nm">${esc(it.name)}${i===0?'<span class="pick">首選</span>':""}</div><div class="dt">${it.type?`<button type="button" class="mtag" data-t="${esc(it.type)}" data-goto="${esc(it.type)}" title="在美食頁篩選「${esc(it.type)}」">${esc(it.type)}</button>`:""}${esc(it.detail)}</div>${it.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}<a class="maps" href="${maps(it.name)}" target="_blank" rel="noopener">地圖</a></div></li>`).join("")}</ol>
         ${m.note?`<div class="note">${esc(m.note)}</div>`:""}`;
       grid.appendChild(box);
     });
@@ -1649,6 +1682,28 @@ const pb=$("#practices-body");
       apply();
     });
   });
+
+  /* 用餐卡的類型標籤 → 跳到美食頁並套用同一類型篩選；沒有對應分組就退回關鍵字搜尋 */
+  document.addEventListener("click", (e)=>{
+    const t = e.target.closest(".mtag[data-goto]");
+    if(!t) return;
+    const want = t.dataset.goto || "";
+    const head = want.split(/[／/]/)[0].trim();
+    if(searchEl && searchEl.value){ searchEl.value = ""; searchEl.dispatchEvent(new Event("input")); }
+    const pick = catBtns.find(b=>b.dataset.cat === want)
+      || catBtns.find(b=>{ const c=b.dataset.cat||""; return c && c !== "全部類型" && (want.includes(c) || c.includes(head)); });
+    if(pick){
+      pick.click();
+    } else if(searchEl){
+      catBtns.find(b=>b.dataset.cat === "全部類型")?.click();
+      searchEl.value = head;
+      searchEl.dispatchEvent(new Event("input"));
+    }
+    // 用 hash 跳轉，瀏覽器原生處理捲動，也比 scrollIntoView 穩定
+    if(location.hash !== "#food") location.hash = "#food";
+    else document.querySelector("#food")?.scrollIntoView({block:"start"});
+  });
+
   if(searchEl){
     searchEl.addEventListener("input", ()=>{ query = searchEl.value; apply(); });
     searchEl.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && searchEl.value){ searchEl.value=""; query=""; apply(); } });
@@ -1689,7 +1744,7 @@ def render_food_section(food: list[dict]) -> str:
             '</div></section>'
         )
 
-    top_cats = [cat for cat, _ in Counter(it["category"] for it in food if it["category"]).most_common(8)]
+    top_cats = [cat for cat, _ in Counter(it["cat_group"] for it in food if it["cat_group"]).most_common()]
 
     region_chips = [
         '<button type="button" class="food-chip on" data-region="全部" aria-pressed="true">全部</button>'
@@ -1754,7 +1809,7 @@ def render_food_section(food: list[dict]) -> str:
         cards_html.append(
             f'<article class="food-card" tabindex="0" style="--rc:{color}" '
             f'data-region="{escape(reg, quote=True)}" '
-            f'data-cat="{escape(it["category"], quote=True)}" '
+            f'data-cat="{escape(it["cat_group"], quote=True)}" '
             f'data-q="{escape(haystack, quote=True)}"{card_title_attr}>'
             f'<div class="food-card__head">'
             f'<div class="food-names"><div class="food-zh">{escape(it["name_zh"])}</div>{ja_html}</div>'
