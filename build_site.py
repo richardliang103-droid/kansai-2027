@@ -148,7 +148,12 @@ def parse_meals(block: str, day_no: int) -> list[dict]:
             missing = (detail.count("（") + detail.count("(")) - (detail.count("）") + detail.count(")"))
             if missing > 0:
                 detail = detail + "）" * missing
-            items.append({"name": name, "detail": detail, "links": extract_links(part)})
+            # 類型｜細節：把「類型」抽成標籤，其餘才是說明
+            tm = re.match(r"^([^｜|]{1,14})[｜|](.+)$", detail)
+            mtype = ""
+            if tm:
+                mtype, detail = tm.group(1).strip(), tm.group(2).strip()
+            items.append({"name": name, "type": mtype, "detail": detail, "links": extract_links(part)})
         meals.append({"slot": slot, "area": area, "items": items, "note": " ".join(extra)})
     return meals
 
@@ -641,6 +646,14 @@ details.notes li{margin-bottom:6px}
 .meal .dt{color:var(--muted);font-size:12px}
 .meal a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(0,91,172,.35);margin-left:6px;font-family:var(--mono);font-size:10.5px}
 .meal .pick{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;background:var(--c,var(--accent));color:#fff;padding:1px 5px;margin-left:6px;vertical-align:1px}
+.mtypes{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.mtag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;line-height:1;padding:3px 6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink-2);white-space:nowrap}
+.meal .dt .mtag{margin-right:6px;vertical-align:1px;background:transparent}
+.mtag[data-t*="壽喜"],.mtag[data-t*="涮涮"]{border-color:#B4552E;color:#B4552E}
+.mtag[data-t*="神戶牛"],.mtag[data-t*="燒肉"]{border-color:#8C2F39;color:#8C2F39}
+.mtag[data-t*="壽司"],.mtag[data-t*="海鮮"]{border-color:#1F6F8B;color:#1F6F8B}
+.mtag[data-t*="甜點"],.mtag[data-t*="布丁"],.mtag[data-t*="抹茶"],.mtag[data-t*="咖啡"]{border-color:#8A6A3B;color:#8A6A3B}
+.mtag[data-t*="拉麵"],.mtag[data-t*="烏龍"],.mtag[data-t*="茶蕎麥"]{border-color:#4A5568;color:#4A5568}
 .meal .maps{color:var(--muted);border-bottom:1px dotted var(--muted)}
 
 /* tables */
@@ -1530,8 +1543,10 @@ DATA.days.forEach(d=>{
     const grid = el("div","meals");
     d.meals.forEach(m=>{
       const box = el("div","meal");
+      const types = [...new Set(m.items.map(i=>i.type).filter(Boolean))];
       box.innerHTML = `<div class="slot">${esc(m.slot)}</div><div class="area">${esc(m.area)}</div>
-        <ol>${m.items.map((it,i)=>`<li><div><div class="nm">${esc(it.name)}${i===0?'<span class="pick">首選</span>':""}</div><div class="dt">${esc(it.detail)}</div>${it.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}<a class="maps" href="${maps(it.name)}" target="_blank" rel="noopener">地圖</a></div></li>`).join("")}</ol>
+        ${types.length?`<div class="mtypes">${types.map(t=>`<span class="mtag" data-t="${esc(t)}">${esc(t)}</span>`).join("")}</div>`:""}
+        <ol>${m.items.map((it,i)=>`<li><div><div class="nm">${esc(it.name)}${i===0?'<span class="pick">首選</span>':""}</div><div class="dt">${it.type?`<span class="mtag" data-t="${esc(it.type)}">${esc(it.type)}</span>`:""}${esc(it.detail)}</div>${it.links.map(l=>`<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.text)}</a>`).join("")}<a class="maps" href="${maps(it.name)}" target="_blank" rel="noopener">地圖</a></div></li>`).join("")}</ol>
         ${m.note?`<div class="note">${esc(m.note)}</div>`:""}`;
       grid.appendChild(box);
     });
